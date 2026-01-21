@@ -1,0 +1,300 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+/* Fidelio Design System - Warm, Friendly, Calm Café Experience */
+
+@layer base {
+  :root {
+    /* Core Café Palette */
+    --background: 35 45% 97%;
+    --foreground: 25 35% 15%;
+
+    --card: 35 40% 99%;
+    --card-foreground: 25 35% 15%;
+
+    --popover: 35 40% 99%;
+    --popover-foreground: 25 35% 15%;
+
+    /* Warm Coffee Brown - Primary */
+    --primary: 25 55% 28%;
+    --primary-foreground: 35 45% 97%;
+
+    /* Soft Cream - Secondary */
+    --secondary: 35 35% 92%;
+    --secondary-foreground: 25 35% 20%;
+
+    /* Warm Beige - Muted */
+    --muted: 35 30% 94%;
+    --muted-foreground: 25 20% 45%;
+
+    /* Warm Orange - Accent */
+    --accent: 20 80% 55%;
+    --accent-foreground: 35 45% 97%;
+
+    /* Status Colors */
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 35 45% 97%;
+
+    --success: 140 50% 40%;
+    --success-foreground: 35 45% 97%;
+
+    /* Borders & Inputs */
+    --border: 35 25% 88%;
+    --input: 35 25% 88%;
+    --ring: 25 55% 28%;
+
+    --radius: 1rem;
+
+    /* Shadows */
+    --shadow-soft: 0 2px 8px -2px hsl(25 35% 15% / 0.08);
+    --shadow-card: 0 4px 16px -4px hsl(25 35% 15% / 0.1);
+    --shadow-elevated: 0 8px 32px -8px hsl(25 35% 15% / 0.15);
+
+    /* Sidebar (if needed) */
+    --sidebar-background: 35 40% 98%;
+    --sidebar-foreground: 25 25% 30%;
+    --sidebar-primary: 25 55% 28%;
+    --sidebar-primary-foreground: 35 45% 97%;
+    --sidebar-accent: 35 30% 94%;
+    --sidebar-accent-foreground: 25 35% 20%;
+    --sidebar-border: 35 25% 90%;
+    --sidebar-ring: 25 55% 28%;
+
+    /* Coffee Bean Progress Colors */
+    --coffee-filled: 25 55% 28%;
+    --coffee-empty: 35 20% 80%;
+    
+    /* Campaign Card */
+    --campaign-bg: 35 35% 95%;
+    --campaign-border: 35 25% 88%;
+  }
+
+  .dark {
+    --background: 25 20% 15%;
+    --foreground: 35 25% 92%;
+
+    --card: 25 18% 18%;
+    --card-foreground: 35 25% 92%;
+
+    --popover: 25 18% 18%;
+    --popover-foreground: 35 25% 92%;
+
+    --primary: 35 45% 70%;
+    --primary-foreground: 25 20% 15%;
+
+    --secondary: 25 18% 22%;
+    --secondary-foreground: 35 25% 88%;
+
+    --muted: 25 18% 22%;
+    --muted-foreground: 35 20% 65%;
+
+    --accent: 20 65% 60%;
+    --accent-foreground: 35 25% 95%;
+
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 35 25% 95%;
+
+    --border: 25 18% 25%;
+    --input: 25 18% 25%;
+    --ring: 35 45% 70%;
+
+    --sidebar-background: 25 18% 16%;
+    --sidebar-foreground: 35 25% 88%;
+    --sidebar-primary: 35 45% 65%;
+    --sidebar-primary-foreground: 25 20% 15%;
+    --sidebar-accent: 25 18% 20%;
+    --sidebar-accent-foreground: 35 25% 88%;
+    --sidebar-border: 25 18% 22%;
+    --sidebar-ring: 35 45% 65%;
+
+    --coffee-filled: 35 45% 65%;
+    --coffee-empty: 25 18% 30%;
+    
+    --campaign-bg: 25 18% 20%;
+    --campaign-border: 25 18% 28%;
+  }
+
+  /* Theme: Forest (Green) */
+  .theme-forest {
+    --primary: 140 45% 30%;
+    --primary-foreground: 140 30% 95%;
+    --accent: 150 60% 45%;
+    --accent-foreground: 140 30% 95%;
+    --ring: 140 45% 30%;
+    --coffee-filled: 140 45% 30%;
+  }
+
+  .dark.theme-forest {
+    --primary: 150 50% 65%;
+    --primary-foreground: 140 30% 10%;
+    --accent: 150 60% 50%;
+    --accent-foreground: 140 30% 95%;
+    --ring: 150 50% 65%;
+    --coffee-filled: 150 50% 65%;
+  }
+
+  /* Theme: Ocean (Blue) */
+  .theme-ocean {
+    --primary: 200 55% 35%;
+    --primary-foreground: 200 30% 95%;
+    --accent: 210 70% 50%;
+    --accent-foreground: 200 30% 95%;
+    --ring: 200 55% 35%;
+    --coffee-filled: 200 55% 35%;
+  }
+
+  .dark.theme-ocean {
+    --primary: 200 50% 70%;
+    --primary-foreground: 200 30% 10%;
+    --accent: 210 70% 55%;
+    --accent-foreground: 200 30% 95%;
+    --ring: 200 50% 70%;
+    --coffee-filled: 200 50% 70%;
+  }
+
+  /* Theme: Lavender (Purple) */
+  .theme-lavender {
+    --primary: 270 45% 35%;
+    --primary-foreground: 270 30% 95%;
+    --accent: 280 60% 55%;
+    --accent-foreground: 270 30% 95%;
+    --ring: 270 45% 35%;
+    --coffee-filled: 270 45% 35%;
+  }
+
+  .dark.theme-lavender {
+    --primary: 270 50% 70%;
+    --primary-foreground: 270 30% 10%;
+    --accent: 280 60% 60%;
+    --accent-foreground: 270 30% 95%;
+    --ring: 270 50% 70%;
+    --coffee-filled: 270 50% 70%;
+  }
+
+  /* Theme: Sunset (Orange-Pink) */
+  .theme-sunset {
+    --primary: 15 60% 40%;
+    --primary-foreground: 15 30% 95%;
+    --accent: 10 75% 60%;
+    --accent-foreground: 15 30% 95%;
+    --ring: 15 60% 40%;
+    --coffee-filled: 15 60% 40%;
+  }
+
+  .dark.theme-sunset {
+    --primary: 15 55% 70%;
+    --primary-foreground: 15 30% 10%;
+    --accent: 10 75% 65%;
+    --accent-foreground: 15 30% 95%;
+    --ring: 15 55% 70%;
+    --coffee-filled: 15 55% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply text-foreground;
+    background: linear-gradient(135deg, 
+      hsl(35 45% 96%) 0%, 
+      hsl(35 40% 95%) 25%, 
+      hsl(35 35% 94%) 50%, 
+      hsl(35 38% 95%) 75%,
+      hsl(35 42% 96%) 100%
+    );
+  }
+
+  .dark body {
+    background: linear-gradient(135deg, 
+      hsl(25 20% 15%) 0%, 
+      hsl(25 18% 16%) 30%, 
+      hsl(25 16% 17%) 60%, 
+      hsl(25 15% 18%) 100%
+    );
+  }
+}
+
+@layer utilities {
+  /* Mobile Container */
+  .mobile-container {
+    @apply max-w-md mx-auto min-h-screen;
+  }
+
+  /* Safe Area Padding */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  /* Coffee Bean Animation */
+  @keyframes bean-fill {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .animate-bean-fill {
+    animation: bean-fill 0.4s ease-out forwards;
+  }
+
+  /* Subtle Float Animation */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Celebration Animation */
+  @keyframes celebrate {
+    0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+    50% { transform: scale(1.1) rotate(5deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+
+  .animate-celebrate {
+    animation: celebrate 0.6s ease-out forwards;
+  }
+
+  /* Soft Pulse */
+  @keyframes soft-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .animate-soft-pulse {
+    animation: soft-pulse 2s ease-in-out infinite;
+  }
+
+  /* Slide Up */
+  @keyframes slide-up {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.4s ease-out forwards;
+  }
+
+  /* Gradient Text */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  }
+}
