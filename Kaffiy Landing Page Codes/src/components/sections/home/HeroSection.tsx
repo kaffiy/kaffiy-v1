@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 export function HeroSection() {
-  const { t, language } = useI18n();
+  const { t } = useI18n();
   const sectionRef = useRef<HTMLElement>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const accentColor = "hsl(var(--primary) / 0.9)";
@@ -73,7 +73,7 @@ export function HeroSection() {
           >
             {(() => {
               const headline = t("hero.headline");
-              const highlightPhrase = language === "tr" ? "Kopmaz Bağlar" : "Unbreakable Bonds";
+              const highlightPhrase = t("hero.highlight");
               const regex = new RegExp(`(${highlightPhrase})`, "i");
               return headline.split(regex).map((part, index) => 
                 regex.test(part) ? (
@@ -126,9 +126,6 @@ export function HeroSection() {
                   />
                 </Link>
               </Button>
-              <span className="text-xs font-medium text-muted-foreground/80">
-                {t("hero.cta.setup")}
-              </span>
             </div>
             <Button 
               variant="outline" 

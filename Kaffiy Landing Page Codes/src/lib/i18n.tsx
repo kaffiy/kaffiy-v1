@@ -11,7 +11,7 @@ interface I18nContextType {
 const translations = {
   en: {
     // Logo
-    "logo.subtitle": "Smart Loyalty System",
+    "logo.subtitle": "AI Business Partner",
     
     // Navbar
     "nav.home": "Home",
@@ -21,35 +21,36 @@ const translations = {
     "nav.startPilot": "Get Started",
 
     // Hero
-    "hero.headline": "Build Unbreakable Bonds With Your Customers.",
-    "hero.subheadline": "No app download required, no lost cards. Your customers just open the camera and earn points in seconds. You recognize them by name, they stay loyal to your café.",
-    "hero.cta.primary": "Build Your First Bond",
+    "hero.headline": "Paper Cards Out, AI at the Register!",
+    "hero.highlight": "AI",
+    "hero.subheadline": "Predict customer behavior and win back regulars automatically with Kaffiy.",
+    "hero.cta.primary": "Win Back Lost Regulars",
     "hero.cta.setup": "Setup takes only 5 minutes",
-    "hero.cta.secondary": "See how it works",
+    "hero.cta.secondary": "Request a Free Demo",
 
     // Why Kaffiy (Problem & Solution)
-    "whyKaffiy.title": "Take Your Business to the Next Level",
-    "whyKaffiy.card1.title": "Digital Wallet Freedom",
-    "whyKaffiy.card1.desc": "Worn-out, lost paper cards are history. Your customers carry their points on their phones, never lose them.",
-    "whyKaffiy.card2.title": "No Integration Headache",
-    "whyKaffiy.card2.desc": "Don't change your existing POS or cash register system. Kaffiy works completely independently, doesn't disrupt your routine.",
-    "whyKaffiy.card3.title": "Win with Data",
-    "whyKaffiy.card3.desc": "Don't just sell coffee, collect data. Which customer comes how often, who is about to leave you? See it all.",
+    "whyKaffiy.title": "High-Tech, Revenue-Driven Showcase",
+    "whyKaffiy.card1.title": "Lost Customer Radar (Churn Recovery)",
+    "whyKaffiy.card1.desc": "Detect regulars who stop visiting and auto-send the right offer.",
+    "whyKaffiy.card2.title": "Predictive Consumer Analytics",
+    "whyKaffiy.card2.desc": "Time the right message to lift revenue.",
+    "whyKaffiy.card3.title": "Cross-Merchant Network",
+    "whyKaffiy.card3.desc": "Local businesses in the Kaffiy network refer customers smartly.",
 
     // How it works
     "howItWorks.title": "How it works",
     "howItWorks.step1.title": "Place Your QR Code",
-    "howItWorks.step1.desc": "No setup or technical service. Create your unique QR code and place it at your checkout counter.",
+    "howItWorks.step1.desc": "Create your QR and place it at the counter.",
     "howItWorks.step2.title": "App-Free Scanning",
-    "howItWorks.step2.desc": "This is our biggest difference: Your customer doesn't need to download an app. They just need to open their camera.",
+    "howItWorks.step2.desc": "Customers scan with their camera, no app.",
     "howItWorks.step3.title": "Instant Loyalty",
-    "howItWorks.step3.desc": "The customer earns their point in seconds, and you start recognizing them. Paper cards become history.",
+    "howItWorks.step3.desc": "Points sync instantly, you recognize regulars.",
 
     // Dashboard Preview
     "dashboard.title": "Grow with Data, Not Guesses.",
     "dashboard.metric1": "Returning customers",
     "dashboard.metric2": "Busiest hours",
-    "dashboard.desc": "Who is your most loyal customer? What are your busiest hours? Kaffiy gives you clear answers instead of complex tables. From computer or mobile, keep your finger on the pulse of your store in real-time.",
+    "dashboard.desc": "See loyal customers, peak hours, and churn risk at a glance.",
 
     // App Showcase
     "appShowcase.title": "Speed and Elegance Your Customers Will Love",
@@ -140,7 +141,7 @@ const translations = {
   },
   tr: {
     // Logo
-    "logo.subtitle": "Akıllı Sadakat Sistemi",
+    "logo.subtitle": "Yapay Zeka İşletme Ortağı",
     
     // Navbar
     "nav.home": "Ana Sayfa",
@@ -150,35 +151,36 @@ const translations = {
     "nav.startPilot": "Hemen Başla",
 
     // Hero
-    "hero.headline": "Müşterilerinizle Kopmaz Bağlar Kurun.",
-    "hero.subheadline": "Uygulama indirme zorunluluğu yok, kaybolan kartlar yok. Müşterileriniz sadece kamerayı açar ve saniyeler içinde puan kazanır. Siz onları ismen tanırsınız, onlar kafenize bağlı kalır.",
-    "hero.cta.primary": "İlk Bağınızı Kurun",
+    "hero.headline": "Kağıt Kartlar Çöpe, Yapay Zeka Kasaya!",
+    "hero.highlight": "Yapay Zeka",
+    "hero.subheadline": "Müşteri davranışını tahmin edin, müdavimleri otomatik geri kazanın.",
+    "hero.cta.primary": "Kayıp Müşterilerinizi Geri Kazanın",
     "hero.cta.setup": "Kurulum sadece 5 dakika",
-    "hero.cta.secondary": "Nasıl çalışır?",
+    "hero.cta.secondary": "Ücretsiz Demo İsteyin",
 
     // Why Kaffiy (Problem & Solution)
-    "whyKaffiy.title": "İşletmenizi Bir Üst Seviyeye Taşıyın",
-    "whyKaffiy.card1.title": "Dijital Cüzdan Özgürlüğü",
-    "whyKaffiy.card1.desc": "Yıpranan, kaybolan kağıt kartlar tarih oldu. Müşterileriniz puanlarını telefonlarında taşır, asla kaybetmez.",
-    "whyKaffiy.card2.title": "Entegrasyon Derdi Yok",
-    "whyKaffiy.card2.desc": "Mevcut POS veya kasa sisteminizi değiştirmeyin. Kaffiy tamamen bağımsız çalışır, düzeninizi bozmaz.",
-    "whyKaffiy.card3.title": "Verilerle Kazanın",
-    "whyKaffiy.card3.desc": "Sadece kahve satmayın, veri toplayın. Hangi müşteri ne sıklıkla geliyor, kim sizi terk etmek üzere? Hepsini görün.",
+    "whyKaffiy.title": "Yüksek Teknoloji & Ciro Odaklı Vitrin",
+    "whyKaffiy.card1.title": "Kayıp Müşteri Radarı (Churn Recovery)",
+    "whyKaffiy.card1.desc": "Gelmesi kesilen müşteriyi tespit eder, doğru teklifi otomatik yollar.",
+    "whyKaffiy.card2.title": "Prediktif Tüketici Analizi",
+    "whyKaffiy.card2.desc": "Doğru anda doğru mesajla cironuzu artırın.",
+    "whyKaffiy.card3.title": "Çapraz Esnaf Ağı",
+    "whyKaffiy.card3.desc": "Kaffiy ağındaki işletmeler akıllı yönlendirme yapar.",
 
     // How it works
     "howItWorks.title": "Nasıl çalışır?",
     "howItWorks.step1.title": "QR Kodunuzu Koyun",
-    "howItWorks.step1.desc": "Kurulum veya teknik servis yok. Size özel QR kodunu oluşturun ve kasanıza yerleştirin.",
+    "howItWorks.step1.desc": "QR kodu oluşturun ve kasaya yerleştirin.",
     "howItWorks.step2.title": "Uygulamasız Tarama",
-    "howItWorks.step2.desc": "En büyük farkımız bu: Müşteriniz uygulama indirmek zorunda değil. Sadece kamerasını açması yeterli.",
+    "howItWorks.step2.desc": "Uygulama yok, kamera ile tarama.",
     "howItWorks.step3.title": "Anında Sadakat",
-    "howItWorks.step3.desc": "Müşteri saniyeler içinde puanını kazanır, siz de onu tanımaya başlarsınız. Kağıt kartlar tarihe karışır.",
+    "howItWorks.step3.desc": "Puanlar anında işler, müdavim görünür.",
 
     // Dashboard Preview
     "dashboard.title": "Tahminlerle Değil, Verilerle Büyüyün.",
     "dashboard.metric1": "Geri dönen müşteri oranı",
     "dashboard.metric2": "En yoğun saatler",
-    "dashboard.desc": "En sadık müşteriniz kim? En yoğun saatleriniz hangileri? Kaffiy, karmaşık tablolar yerine size net cevaplar sunar. Bilgisayar veya mobilden, dükkanınızın nabzını anlık tutun.",
+    "dashboard.desc": "Sadık müşteriler, yoğun saatler ve riskler tek ekranda.",
 
     // App Showcase
     "appShowcase.title": "Müşterilerinizin Seveceği Hız ve Şıklık",
