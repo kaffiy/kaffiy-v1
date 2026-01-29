@@ -22,7 +22,7 @@ const mockBaristas = [
 ];
 
 export const BaristaView = () => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme("barista");
   const [activeTab, setActiveTab] = useState<ActiveTab>("qr");
   const [customerName, setCustomerName] = useState<string | null>(null);
   const [currentStamps, setCurrentStamps] = useState(0);

@@ -2,24 +2,27 @@ import { useState, useEffect } from "react";
 
 type Theme = "light" | "dark";
 type Palette = "terracotta" | "sage" | "charcoal" | "latte" | "sand" | "mist";
+type ThemeScope = "dashboard" | "barista";
 
-const THEME_STORAGE_KEY = "barista-theme";
-const PALETTE_STORAGE_KEY = "barista-palette";
+const storageKey = (scope: ThemeScope, key: "theme" | "palette") =>
+  `kaffiy-${scope}-${key}`;
 
-export const useTheme = () => {
+export const useTheme = (scope: ThemeScope = "dashboard") => {
+  const defaultTheme: Theme = scope === "barista" ? "dark" : "light";
+
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+      const stored = localStorage.getItem(storageKey(scope, "theme")) as Theme | null;
       if (stored === "light" || stored === "dark") {
         return stored;
       }
     }
-    return "light";
+    return defaultTheme;
   });
 
   const [palette, setPalette] = useState<Palette>(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(PALETTE_STORAGE_KEY) as Palette | null;
+      const stored = localStorage.getItem(storageKey(scope, "palette")) as Palette | null;
       if (
         stored === "terracotta" ||
         stored === "sage" ||
@@ -41,14 +44,14 @@ export const useTheme = () => {
     } else {
       root.classList.remove("dark");
     }
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
+    localStorage.setItem(storageKey(scope, "theme"), theme);
+  }, [theme, scope]);
 
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.palette = palette;
-    localStorage.setItem(PALETTE_STORAGE_KEY, palette);
-  }, [palette]);
+    localStorage.setItem(storageKey(scope, "palette"), palette);
+  }, [palette, scope]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
