@@ -1,3 +1,4 @@
 {
-  "is_bot_running": false
+  "is_bot_running": true,
+  "autonomous_mode": false
 }

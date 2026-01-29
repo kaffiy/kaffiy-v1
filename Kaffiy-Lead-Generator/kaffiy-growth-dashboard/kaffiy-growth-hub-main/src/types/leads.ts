@@ -8,5 +8,9 @@ export interface LeadRecord {
   "Last Review"?: string;
   "AI Message"?: string;
   "Ready Message"?: string;
+  "Active Strategy"?: string;
+  selected_strategy?: string;
+  sent_strategy?: string;
+  last_activity_at?: string;
   [key: string]: string | undefined;
 }

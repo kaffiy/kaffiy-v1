@@ -6,13 +6,20 @@ import { CityChart } from '@/components/dashboard/CityChart';
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
 import { LeadRecord } from '@/types/leads';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/context/LanguageContext';
 
 const Index = () => {
+  const { t } = useLanguage();
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
   const [leads, setLeads] = useState<LeadRecord[]>([]);
   const [dataState, setDataState] = useState<'loading' | 'ready' | 'empty'>('loading');
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [isBotRunning, setIsBotRunning] = useState(false);
+  const [settings, setSettings] = useState<{ is_bot_running: boolean; autonomous_mode: boolean }>({
+    is_bot_running: false,
+    autonomous_mode: false,
+  });
+  const [successTimelineCleared, setSuccessTimelineCleared] = useState(false);
+  const [resetTrigger, setResetTrigger] = useState(0);
   const { toast } = useToast();
 
   const loadLeads = useCallback(async () => {
@@ -58,9 +65,12 @@ const Index = () => {
         throw new Error('Settings not available');
       }
       const data = await response.json();
-      setIsBotRunning(Boolean(data?.is_bot_running));
+      setSettings({
+        is_bot_running: Boolean(data?.is_bot_running),
+        autonomous_mode: Boolean(data?.autonomous_mode),
+      });
     } catch {
-      setIsBotRunning(false);
+      setSettings({ is_bot_running: false, autonomous_mode: false });
     }
   }, []);
 
@@ -69,27 +79,83 @@ const Index = () => {
     loadSettings();
   }, [loadLeads]);
 
-  const persistSettings = async (nextValue: boolean) => {
-    try {
-      const response = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ is_bot_running: nextValue }, null, 2),
-      });
-      if (!response.ok) {
-        throw new Error('Save failed');
-      }
-    } catch {
-      localStorage.setItem('settings', JSON.stringify({ is_bot_running: nextValue }));
-    }
+  const persistSettings = async (updates: Partial<{ is_bot_running: boolean; autonomous_mode: boolean }>) => {
+    setSettings((prev) => {
+      const next = { ...prev, ...updates };
+      (async () => {
+        try {
+          const res = await fetch('/api/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(next, null, 2),
+          });
+          if (!res.ok) throw new Error('Save failed');
+        } catch {
+          localStorage.setItem('settings', JSON.stringify(next));
+        }
+      })();
+      return next;
+    });
   };
 
-  const handleToggleBot = async (nextValue: boolean) => {
-    setIsBotRunning(nextValue);
-    await persistSettings(nextValue);
+  const handleToggleBot = (nextValue: boolean) => {
+    persistSettings({ is_bot_running: nextValue });
   };
+
+  const handleToggleAutonomous = (nextValue: boolean) => {
+    persistSettings({ autonomous_mode: nextValue });
+  };
+
+  const handleReset = useCallback(() => {
+    setSelectedLead(null);
+    setResetTrigger((r) => r + 1);
+    setLeads((prev) => {
+      const next = prev.map((lead) => {
+        if (lead['Phone Status'] === 'Sent') {
+          return { ...lead, 'Phone Status': 'Not Sent', 'WhatsApp Status': 'Not Sent' };
+        }
+        return lead;
+      });
+      persistLeads(next);
+      return next;
+    });
+    toast({
+      title: t('index.resetDoneTitle'),
+      description: t('index.resetDoneDesc'),
+    });
+  }, [toast, t]);
+
+  const handleDeleteLead = useCallback((lead: LeadRecord) => {
+    const isSame = (a: LeadRecord, b: LeadRecord) =>
+      (a.ID && b.ID && a.ID === b.ID) ||
+      (a['Company Name'] === b['Company Name'] && a.Phone === b.Phone);
+    (async () => {
+      try {
+        await fetch('/api/deleted_leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lead),
+        });
+      } catch {
+        // ignore; still remove from list
+      }
+      try {
+        await fetch('/api/delete_lead_from_sheets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lead),
+        });
+      } catch {
+        // ignore; silinen listede işaretli, gerekirse manuel Sheets'ten silinir
+      }
+    })();
+    setLeads((prev) => {
+      const next = prev.filter((item) => !isSame(item, lead));
+      persistLeads(next);
+      return next;
+    });
+    setSelectedLead((prev) => (prev && isSame(prev, lead) ? null : prev));
+  }, []);
 
   const persistLeads = async (nextLeads: LeadRecord[]) => {
     try {
@@ -106,25 +172,30 @@ const Index = () => {
       setSaveError(null);
     } catch {
       localStorage.setItem('leads_data', JSON.stringify(nextLeads));
-      setSaveError('Dosyaya yazılamadı. Bot değişikliği göremeyebilir.');
+      setSaveError(t('index.saveError'));
     }
   };
 
   const handleUpdateLead = (lead: LeadRecord, updates: Partial<LeadRecord>) => {
+    const hasStatusChange =
+      'Phone Status' in updates || 'WhatsApp Status' in updates;
+    const updatesWithTime = hasStatusChange
+      ? { ...updates, last_activity_at: new Date().toISOString() }
+      : updates;
     setLeads((prev) => {
       const next = prev.map((item) => {
         const isMatch =
           (item.ID && item.ID === lead.ID) ||
           (!item.ID && item['Company Name'] === lead['Company Name'] && item.Phone === lead.Phone);
-        return isMatch ? { ...item, ...updates } : item;
+        return isMatch ? { ...item, ...updatesWithTime } : item;
       });
       persistLeads(next);
       return next;
     });
     if (updates['Phone Status'] === 'Send Requested') {
       toast({
-        title: 'Gönderim kuyruğa alındı',
-        description: 'Bot çalışıyorsa WhatsApp otomatik açılacaktır.',
+        title: 'Send queued',
+        description: 'If the bot is running, WhatsApp will open automatically.',
       });
     }
   };
@@ -146,36 +217,73 @@ const Index = () => {
     return Array.from(counts.entries()).map(([city, count]) => ({ city, leads: count }));
   }, [leads]);
 
+  const recentSentActivities = useMemo(() => {
+    if (successTimelineCleared) return [];
+    const withActivity = leads.filter((lead) => {
+      const ps = lead['Phone Status'] || '';
+      const ws = lead['WhatsApp Status'] || '';
+      return ps === 'Sent' || ws === 'Pending' || ws === 'Accepted' || ws === 'Rejected' || ws === 'Demo Scheduled';
+    });
+    const sorted = [...withActivity].sort((a, b) => {
+      const ta = a.last_activity_at ? new Date(a.last_activity_at).getTime() : 0;
+      const tb = b.last_activity_at ? new Date(b.last_activity_at).getTime() : 0;
+      return tb - ta;
+    });
+    const recent = sorted.slice(0, 15);
+    return recent.map((lead, index) => {
+      const ps = lead['Phone Status'] || '';
+      const ws = lead['WhatsApp Status'] || '';
+      let type: 'message_sent' | 'status_update' = 'message_sent';
+      let description = t('index.whatsappSendDone');
+      if (ps === 'Sent') {
+        description = lead['Last_Action'] === 'Automated_Sent' ? t('index.autonomousSendDone') : t('index.whatsappSendDone');
+      } else if (ws === 'Pending') {
+        description = t('activity.messageSentPending');
+      } else if (ws === 'Accepted') {
+        type = 'status_update';
+        description = t('activity.statusAccepted');
+      } else if (ws === 'Rejected') {
+        type = 'status_update';
+        description = t('activity.statusRejected');
+      } else if (ws === 'Demo Scheduled') {
+        type = 'status_update';
+        description = t('activity.demoScheduled');
+      }
+      return {
+        id: lead.ID || `${lead['Company Name']}-${lead.Phone}-${index}-${lead.last_activity_at || ''}`,
+        type,
+        description,
+        cafeName: lead['Company Name'] || 'Business',
+        timestamp: lead.last_activity_at ? new Date(lead.last_activity_at) : new Date(),
+      };
+    });
+  }, [leads, successTimelineCleared, t]);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background ${settings.is_bot_running ? 'bot-live-pulse' : ''}`}>
       <Header
         stats={stats}
         onRefresh={loadLeads}
-        isBotRunning={isBotRunning}
+        onReset={handleReset}
+        isBotRunning={settings.is_bot_running}
         onToggleBot={handleToggleBot}
+        isAutonomous={settings.autonomous_mode}
+        onToggleAutonomous={handleToggleAutonomous}
       />
       
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Title */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground">Lead Management</h2>
-          <p className="text-muted-foreground mt-1">
-            AI-powered cafe outreach and personalized messaging
-          </p>
-        </div>
+      <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-5">
         {dataState !== 'ready' && (
-          <div className="mb-6 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-            Veri bekleniyor...
+          <div className="mb-4 rounded-md border border-border/80 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            {t('index.loadingData')}
           </div>
         )}
         {saveError && (
-          <div className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {saveError}
           </div>
         )}
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
           {/* Lead Table - Takes 2 columns on xl */}
           <div className="xl:col-span-2">
             <LeadTable 
@@ -183,13 +291,15 @@ const Index = () => {
               onSelectLead={setSelectedLead}
               selectedLead={selectedLead}
               onUpdateLead={handleUpdateLead}
+              onDeleteLead={handleDeleteLead}
+              resetTrigger={resetTrigger}
             />
           </div>
 
           {/* Right Sidebar - Charts & Activity */}
           <div className="space-y-6">
             <CityChart data={cityData} />
-            <ActivityFeed activities={[]} />
+            <ActivityFeed activities={recentSentActivities} onReset={() => setSuccessTimelineCleared(true)} />
           </div>
         </div>
       </main>
@@ -199,6 +309,7 @@ const Index = () => {
         <AIMessagePanel 
           lead={selectedLead} 
           onClose={() => setSelectedLead(null)}
+          onUpdateLead={handleUpdateLead}
         />
       )}
     </div>

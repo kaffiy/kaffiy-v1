@@ -1,8 +1,10 @@
-import { Coffee, Moon, Sun, Bell, Users, Send, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Coffee, Moon, Sun, Bell, RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { ConversionGauge } from './ConversionGauge';
 import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface HeaderStats {
   totalLeads: number;
@@ -14,11 +16,15 @@ interface HeaderStats {
 interface HeaderProps {
   stats: HeaderStats;
   onRefresh: () => void;
+  onReset: () => void;
   isBotRunning: boolean;
   onToggleBot: (nextValue: boolean) => void;
+  isAutonomous: boolean;
+  onToggleAutonomous: (nextValue: boolean) => void;
 }
 
-export function Header({ stats, onRefresh, isBotRunning, onToggleBot }: HeaderProps) {
+export function Header({ stats, onRefresh, onReset, isBotRunning, onToggleBot, isAutonomous, onToggleAutonomous }: HeaderProps) {
+  const { t, lang, setLang } = useLanguage();
   const [isDark, setIsDark] = useState(true); // Default to dark mode
 
   useEffect(() => {
@@ -36,104 +42,86 @@ export function Header({ stats, onRefresh, isBotRunning, onToggleBot }: HeaderPr
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyber-lime">
-              <Coffee className="h-5 w-5 text-cyber-lime-foreground" />
+    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur-sm">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex h-14 items-center justify-between gap-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyber-lime">
+              <Coffee className="h-4 w-4 text-cyber-lime-foreground" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground tracking-tight">Kaffiy</h1>
-              <p className="text-[10px] font-medium text-cyber-lime uppercase tracking-wider">
-                AI Sales Hub
-              </p>
+            <div className="min-w-0">
+              <h1 className="text-base font-semibold text-foreground truncate">Kaffiy</h1>
+              <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">AI Sales</p>
             </div>
           </div>
 
-          {/* Stats Summary */}
-          <div className="hidden md:flex items-center gap-8">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Leads</p>
-                <p className="text-lg font-bold text-foreground">{stats.totalLeads}</p>
-              </div>
-            </div>
-
-            <div className="w-px h-10 bg-border" />
-
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
-                <Send className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Messages Sent</p>
-                <p className="text-lg font-bold text-foreground">{stats.messagesSent}</p>
-              </div>
-            </div>
-
-            <div className="w-px h-10 bg-border" />
-
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
-                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Accepted</p>
-                <p className="text-lg font-bold text-foreground">{stats.accepted}</p>
-              </div>
-            </div>
-
-            <div className="w-px h-10 bg-border" />
-
-            <div className="flex items-center gap-3">
-              <ConversionGauge value={stats.conversionRate} size={48} strokeWidth={5} />
-              <div>
-                <p className="text-xs text-muted-foreground">Conversion</p>
-                <p className="text-xs text-cyber-lime font-medium">Rate</p>
-              </div>
-            </div>
+          <div className="hidden sm:flex items-center gap-4 text-xs">
+            <span className="text-muted-foreground">Leads</span>
+            <span className="font-medium tabular-nums">{stats.totalLeads}</span>
+            <span className="text-muted-foreground">{t('header.sent')}</span>
+            <span className="font-medium tabular-nums">{stats.messagesSent}</span>
+            <span className="text-muted-foreground">{t('header.accepted')}</span>
+            <span className="font-medium tabular-nums">{stats.accepted}</span>
+            <ConversionGauge value={stats.conversionRate} size={32} strokeWidth={4} />
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            <div className="hidden lg:flex items-center gap-3 mr-2 rounded-full border border-border px-3 py-1.5">
-              <span className="text-xs text-muted-foreground">Bot Kontrol Paneli</span>
-              <Switch checked={isBotRunning} onCheckedChange={onToggleBot} />
-              <span className={isBotRunning ? "text-xs text-emerald-400" : "text-xs text-red-400"}>
-                {isBotRunning ? "Bot Canlı" : "Bot Uykuda"}
-              </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="hidden md:flex items-center gap-2 mr-1">
+              <div className="flex items-center gap-1.5 rounded-md border border-border/80 px-2 py-1">
+                <Switch checked={isBotRunning} onCheckedChange={onToggleBot} className="scale-90" />
+                <span className={cn("text-[11px]", isBotRunning ? "text-emerald-500" : "text-muted-foreground")}>
+                  {isBotRunning ? "Bot" : t('header.off')}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-md border border-border/80 px-2 py-1">
+                <Switch checked={isAutonomous} onCheckedChange={onToggleAutonomous} disabled={!isBotRunning} className="scale-90" />
+                <span className={cn("text-[11px]", isAutonomous ? "text-cyber-lime" : "text-muted-foreground")}>
+                  {t('header.autonomous')}
+                </span>
+              </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onRefresh}
-              title="Refresh"
+            <div className="flex items-center gap-0.5 rounded-md border border-border/80 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setLang('tr')}
+                className={cn(
+                  'px-2 py-1 text-[11px] font-medium transition-colors',
+                  lang === 'tr' ? 'bg-cyber-lime text-cyber-lime-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                )}
+                title="Türkçe"
+              >
+                TR
+              </button>
+              <button
+                type="button"
+                onClick={() => setLang('en')}
+                className={cn(
+                  'px-2 py-1 text-[11px] font-medium transition-colors',
+                  lang === 'en' ? 'bg-cyber-lime text-cyber-lime-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                )}
+                title="English"
+              >
+                EN
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onReset?.(); }}
+              title={t('header.reset')}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
+              aria-label={t('header.reset')}
             >
-              <RefreshCw className="h-5 w-5" />
+              <RotateCcw className="h-4 w-4" />
+            </button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onRefresh} title={t('header.refresh')}>
+              <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="relative"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-cyber-lime" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 relative" title={lang === 'tr' ? 'Bildirimler' : 'Notifications'}>
+              <Bell className="h-4 w-4" />
+              <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-cyber-lime" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsDark(!isDark)}
-            >
-              {isDark ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsDark(!isDark)}>
+              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
           </div>
         </div>

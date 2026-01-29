@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useLanguage } from '@/context/LanguageContext';
 
 const COLORS = [
   'hsl(30, 35%, 45%)',   // Coffee brown
@@ -11,15 +12,16 @@ interface CityChartProps {
 }
 
 export function CityChart({ data }: CityChartProps) {
+  const { t } = useLanguage();
   return (
     <div className="chart-container animate-slide-up delay-300" style={{ animationFillMode: 'forwards', opacity: 0 }}>
-      <h3 className="text-lg font-semibold text-foreground mb-1">Lead Distribution</h3>
-      <p className="text-sm text-muted-foreground mb-6">By city</p>
+      <h3 className="text-lg font-semibold text-foreground mb-1">{t('chart.leadDistribution')}</h3>
+      <p className="text-sm text-muted-foreground mb-6">{t('chart.byCity')}</p>
       
       <div className="h-[200px]">
         {data.length === 0 ? (
           <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-            Veri bekleniyor...
+            {t('chart.waitingForData')}
           </div>
         ) : (
         <ResponsiveContainer width="100%" height="100%">

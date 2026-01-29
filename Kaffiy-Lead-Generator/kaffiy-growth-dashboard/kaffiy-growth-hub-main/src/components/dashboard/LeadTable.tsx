@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useDeferredValue, useRef } from 'react';
-import { Search, Filter, ChevronDown, Pencil, Send, RotateCcw, MessageCircle, PhoneCall, Sparkles } from 'lucide-react';
+import { Search, Filter, ChevronDown, Pencil, Send, RotateCcw, MessageCircle, PhoneCall, Sparkles, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,20 +13,34 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { StatusBadge } from './StatusBadge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { LeadRecord } from '@/types/leads';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface LeadTableProps {
   leads: LeadRecord[];
   onSelectLead: (lead: LeadRecord) => void;
   selectedLead: LeadRecord | null;
   onUpdateLead: (lead: LeadRecord, updates: Partial<LeadRecord>) => void;
+  onDeleteLead?: (lead: LeadRecord) => void;
+  resetTrigger?: number;
 }
 
 type StatusFilter = 'All' | string;
 
-const WHATSAPP_STATUSES = ['Not Sent', 'Accepted', 'Rejected', 'Demo Scheduled', 'Pending'] as const;
+const WHATSAPP_STATUSES = ['Not Sent', 'Accepted', 'Rejected', 'Demo Scheduled', 'Pending', 'Number Not Found'] as const;
+const PHONE_STATUS_EMPTY = '__';
+const PHONE_STATUSES = [PHONE_STATUS_EMPTY, 'Not Sent', 'Requested', 'Sent', 'Ready'] as const;
 
 const buildWhatsAppMessage = (lead: LeadRecord) => {
   if (lead['Ready Message']) {
@@ -38,44 +52,72 @@ const buildWhatsAppMessage = (lead: LeadRecord) => {
   const companyName = lead['Company Name'] || 'Kafe';
   const review = (lead['Last Review'] || '').replace(/["']/g, '');
   if (review) {
-    return `Merhaba ${companyName}! Yorumunuzda bahsettiğiniz ${review} detayı çok hoşuma gitti. Kaffiy dijital sadakat sistemiyle misafirlerinize kolayca ödül sunmanıza yardımcı olabiliriz.`;
+    return `Merhaba ${companyName}! Yorumunuzda bahsettiğiniz ${review} detayı çok hoşuma gitti. Kaffiy müşteri geri kazanma ve dijital sadakat sistemiyle misafirlerinize kolayca ödül sunmanıza yardımcı olabiliriz.`;
   }
-  return `Merhaba ${companyName}! Kaffiy dijital sadakat sistemiyle misafirlerinize kolayca ödül sunmanıza yardımcı olabiliriz.`;
+  return `Merhaba ${companyName}! Kaffiy müşteri geri kazanma ve dijital sadakat sistemiyle misafirlerinize kolayca ödül sunmanıza yardımcı olabiliriz.`;
 };
 
-export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: LeadTableProps) {
+export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead, onDeleteLead, resetTrigger = 0 }: LeadTableProps) {
+  const { t, lang } = useLanguage();
+  const [leadToDelete, setLeadToDelete] = useState<LeadRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+
+  useEffect(() => {
+    if (resetTrigger > 0) {
+      setSearchQuery('');
+      setStatusFilter('All');
+      setLeadTypeFilter('All');
+      setVisibleCount(10);
+    }
+  }, [resetTrigger]);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<LeadRecord | null>(null);
   const [draftMessage, setDraftMessage] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState('');
-  const [selectedStrategy, setSelectedStrategy] = useState<'A' | 'B' | 'C'>('A');
+  const [selectedStrategy, setSelectedStrategy] = useState<'A' | 'B' | 'C' | 'D'>('A');
   const [isGenerating, setIsGenerating] = useState(false);
   const [visibleCount, setVisibleCount] = useState(10);
   const [sendCountdowns, setSendCountdowns] = useState<Record<string, number>>({});
   const previousStatusesRef = useRef<Record<string, string>>({});
-  const [leadTypeFilter, setLeadTypeFilter] = useState<'All' | 'WhatsApp' | 'Call Only'>('All');
+  const [leadTypeFilter, setLeadTypeFilter] = useState<'All' | 'WhatsApp' | 'Call Only' | 'Email' | 'Instagram' | 'Web' | 'Other'>('All');
+
+  const OTHER_CHANNELS = ['Email', 'Instagram', 'Web', 'Other'];
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
+      const q = deferredSearchQuery.trim().toLowerCase();
       const companyName = (lead['Company Name'] || '').toLowerCase();
       const city = (lead.City || '').toLowerCase();
       const leadId = (lead.ID || '').toLowerCase();
+      const phoneNorm = (lead.Phone || '').replace(/\D/g, '');
+      const qNorm = q.replace(/\D/g, '');
       const matchesSearch = 
-        companyName.includes(deferredSearchQuery.toLowerCase()) ||
-        city.includes(deferredSearchQuery.toLowerCase()) ||
-        leadId.includes(deferredSearchQuery.toLowerCase());
+        companyName.includes(q) ||
+        city.includes(q) ||
+        leadId.includes(q) ||
+        (qNorm.length >= 3 && phoneNorm.includes(qNorm));
       
       const phoneStatus = lead['Phone Status'] || '';
       const matchesStatus = statusFilter === 'All' || phoneStatus === statusFilter;
       const leadType = lead['Lead Type'] || '';
-      const matchesType = leadTypeFilter === 'All' || leadType === leadTypeFilter;
+      const matchesType =
+        leadTypeFilter === 'All' ||
+        leadType === leadTypeFilter ||
+        (leadTypeFilter === 'Other' && OTHER_CHANNELS.includes(leadType));
       return matchesSearch && matchesStatus && matchesType;
     });
   }, [leads, deferredSearchQuery, statusFilter, leadTypeFilter]);
+
+  const sortedLeads = useMemo(() => {
+    return [...filteredLeads].sort((a, b) => {
+      const tA = a.last_activity_at ? new Date(a.last_activity_at).getTime() : 0;
+      const tB = b.last_activity_at ? new Date(b.last_activity_at).getTime() : 0;
+      return tA - tB;
+    });
+  }, [filteredLeads]);
 
   const statuses = useMemo<StatusFilter[]>(() => {
     const uniqueStatuses = new Set<string>();
@@ -102,7 +144,7 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
         nextStatuses[key] = status;
         const previousStatus = previousStatusesRef.current[key];
         if (status === 'Requested' && previousStatus !== 'Requested') {
-          next[key] = 8;
+          next[key] = 5;
         }
         if (status !== 'Requested') {
           delete next[key];
@@ -129,19 +171,33 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
   }, []);
 
   const pagedLeads = useMemo(() => {
-    return filteredLeads.slice(0, visibleCount);
-  }, [filteredLeads, visibleCount]);
+    return sortedLeads.slice(0, visibleCount);
+  }, [sortedLeads, visibleCount]);
 
   const handleWhatsAppStatusChange = (lead: LeadRecord, value: string) => {
     onUpdateLead(lead, { 'WhatsApp Status': value });
   };
 
+  const handlePhoneStatusChange = (lead: LeadRecord, value: string) => {
+    onUpdateLead(lead, { 'Phone Status': value === PHONE_STATUS_EMPTY ? '' : value });
+  };
+
+  const phoneStatusValue = (raw: string | undefined) => (raw && raw.trim() ? raw : PHONE_STATUS_EMPTY);
+  const phoneStatusLabel = (value: string) => {
+    if (!value || value === PHONE_STATUS_EMPTY) return t('table.phoneEmpty');
+    if (value === 'Not Sent') return t('table.phoneNotSent');
+    if (value === 'Requested') return t('table.phoneRequested');
+    if (value === 'Sent') return t('table.phoneSent');
+    if (value === 'Ready') return t('table.phoneReady');
+    return value;
+  };
+
   const handleWhatsAppClick = (event: React.MouseEvent<HTMLButtonElement>, lead: LeadRecord, messageOverride?: string) => {
     event.stopPropagation();
     const message = messageOverride || buildWhatsAppMessage(lead);
-    onUpdateLead(lead, { 'Phone Status': 'Requested', 'Ready Message': message });
+    onUpdateLead(lead, { 'Phone Status': 'Requested', 'Ready Message': message, 'WhatsApp Status': 'Pending' });
     const key = lead.ID || `${lead['Company Name']}-${lead.Phone}`;
-    setSendCountdowns((prev) => ({ ...prev, [key]: 8 }));
+    setSendCountdowns((prev) => ({ ...prev, [key]: 5 }));
   };
 
   const handleResetStatuses = (event: React.MouseEvent<HTMLButtonElement>, lead: LeadRecord) => {
@@ -149,12 +205,20 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
     onUpdateLead(lead, { 'Phone Status': '', 'WhatsApp Status': '' });
   };
 
+  const lastOpenWhatsAppRef = useRef<{ key: string; at: number }>({ key: '', at: 0 });
+  const OPEN_WHATSAPP_DEBOUNCE_MS = 5000;
+
   const handleOpenWhatsApp = (event: React.MouseEvent<HTMLButtonElement>, lead: LeadRecord) => {
     event.stopPropagation();
     const phone = (lead.Phone || '').replace(/[\s\-\(\)]/g, '');
-    if (!phone) {
+    if (!phone) return;
+    const key = lead.ID || `${lead['Company Name']}-${lead.Phone}`;
+    const now = Date.now();
+    if (lastOpenWhatsAppRef.current.key === key && now - lastOpenWhatsAppRef.current.at < OPEN_WHATSAPP_DEBOUNCE_MS) {
       return;
     }
+    lastOpenWhatsAppRef.current = { key, at: now };
+    onUpdateLead(lead, { 'WhatsApp Status': 'Pending' });
     window.open(`whatsapp://send?phone=${phone}`, '_blank');
   };
 
@@ -184,11 +248,13 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
           city: editingLead.City,
           review: editingLead['Last Review'],
           strategy: selectedStrategy,
+          leadId: editingLead.ID,
+          phone: editingLead.Phone,
         }),
       });
       if (!response.ok) {
         const text = await response.text();
-        throw new Error(text || 'Mesaj oluşturulamadı');
+        throw new Error(text || t('table.messageError'));
       }
       const data = await response.json();
       const generated = data.message || '';
@@ -254,7 +320,7 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
       const message =
         error instanceof Error && error.message
           ? error.message
-          : 'Mesaj yeniden yazılamadı. OPENAI_API_KEY ayarlı mı kontrol edin.';
+          : t('table.messageRegenError');
       setRegenerateError(message);
       const fallback = buildWhatsAppMessage({
         ...editingLead,
@@ -267,246 +333,269 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
     }
   };
 
-  const handleStrategyChange = (event: React.MouseEvent<HTMLButtonElement>, lead: LeadRecord, strategy: 'A' | 'B' | 'C') => {
+  const handleStrategyChange = (event: React.MouseEvent<HTMLButtonElement>, lead: LeadRecord, strategy: 'A' | 'B' | 'C' | 'D') => {
     event.stopPropagation();
-    onUpdateLead(lead, { 'request_strategy_change': strategy });
+    onUpdateLead(lead, { 'request_strategy_change': strategy, selected_strategy: strategy, 'Active Strategy': strategy });
   };
 
   return (
     <div className="chart-container animate-slide-up delay-200" style={{ animationFillMode: 'forwards', opacity: 0 }}>
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by cafe name, city, or ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-background border-border"
-            />
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Filter className="h-4 w-4" />
-                {statusFilter}
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {statuses.map((status) => (
-                <DropdownMenuItem 
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                >
-                  {status}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <div className="flex flex-nowrap items-center gap-2 mb-4 shrink-0">
+        <div className="relative w-40 shrink-0">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder={t('table.search')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 pl-8 text-sm bg-background border-border"
+          />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant={leadTypeFilter === 'All' ? 'default' : 'outline'}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 shrink-0 gap-1.5 text-xs">
+              <Filter className="h-3.5 w-3.5" />
+              {statusFilter}
+              <ChevronDown className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {statuses.map((status) => (
+              <DropdownMenuItem
+                key={status}
+                onClick={() => setStatusFilter(status)}
+              >
+                {status}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <div className="flex items-center gap-1 border-l border-border pl-2 shrink-0">
+          <button
+            type="button"
             onClick={() => setLeadTypeFilter('All')}
-            className="h-8"
+            className={cn(
+              'px-2 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap',
+              leadTypeFilter === 'All' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
           >
-            Tümü
-          </Button>
-          <Button
-            variant={leadTypeFilter === 'WhatsApp' ? 'default' : 'outline'}
+            All
+          </button>
+          <button
+            type="button"
             onClick={() => setLeadTypeFilter('WhatsApp')}
-            className="h-8"
+            className={cn(
+              'px-2 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap',
+              leadTypeFilter === 'WhatsApp' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
           >
-            WhatsApp Leads
-          </Button>
-          <Button
-            variant={leadTypeFilter === 'Call Only' ? 'default' : 'outline'}
+            WhatsApp
+          </button>
+          <button
+            type="button"
             onClick={() => setLeadTypeFilter('Call Only')}
-            className="h-8"
+            className={cn(
+              'px-2 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap',
+              leadTypeFilter === 'Call Only' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
           >
-            Manuel Arama Listesi
-          </Button>
+            {t('table.call')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setLeadTypeFilter('Other')}
+            className={cn(
+              'px-2 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap',
+              leadTypeFilter === 'Other' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
+            title="Email / Instagram / Web"
+          >
+            Other
+          </button>
         </div>
       </div>
 
-      <div className="overflow-x-auto custom-scrollbar">
-        <table className="lead-table">
+      <div className="overflow-x-auto custom-scrollbar -mx-1">
+        <table className="lead-table w-full text-sm">
           <thead>
-            <tr>
-              <th>Company Name</th>
-              <th>City</th>
-              <th>Phone Status</th>
-              <th>WhatsApp Status</th>
-              <th className="text-center">Aksiyon</th>
+            <tr className="border-b border-border/80">
+              <th className="text-left py-2.5 px-3 font-medium text-muted-foreground">Business</th>
+              <th className="text-left py-2.5 px-2 font-medium text-muted-foreground">Status</th>
+              <th className="text-left py-2.5 px-2 font-medium text-muted-foreground">WA (Answer)</th>
+              <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">Action</th>
             </tr>
           </thead>
           <tbody>
-            {pagedLeads.map((lead) => (
-              <tr 
+            {pagedLeads.map((lead) => {
+              const waStatus = lead['WhatsApp Status'] || 'Not Sent';
+              const isNumberNotFound =
+                waStatus === 'Number Not Found' || waStatus === 'Numara Bulunamadı';
+              const rowStyle = isNumberNotFound
+                ? "opacity-60 bg-red-500/10 dark:bg-red-950/20 text-red-900/80 dark:text-red-200/70"
+                : waStatus === 'Pending'
+                  ? "bg-amber-500/10 dark:bg-amber-950/20 text-amber-900/90 dark:text-amber-200/80"
+                  : waStatus === 'Accepted'
+                    ? "bg-emerald-500/10 dark:bg-emerald-950/20 text-emerald-900/90 dark:text-emerald-200/80"
+                    : waStatus === 'Rejected'
+                      ? "bg-red-500/10 dark:bg-red-950/20 text-red-900/90 dark:text-red-200/80"
+                      : "";
+              const nameStyle = isNumberNotFound
+                ? "text-red-800/70 dark:text-red-300/60"
+                : waStatus === 'Pending'
+                  ? "text-amber-800/90 dark:text-amber-200/80"
+                  : waStatus === 'Accepted'
+                    ? "text-emerald-800/90 dark:text-emerald-200/80"
+                    : waStatus === 'Rejected'
+                      ? "text-red-800/90 dark:text-red-200/80"
+                      : "text-foreground";
+              return (
+                <tr 
                 key={lead.ID || `${lead['Company Name']}-${lead.Phone}`}
                 onClick={() => onSelectLead(lead)}
                 className={cn(
-                  selectedLead?.ID === lead.ID && "selected",
-                  lead['Phone Status'] === 'Sent' && "bg-cyber-lime/10 hover:bg-cyber-lime/15"
+                  "group border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer",
+                  selectedLead?.ID === lead.ID && "bg-muted/50",
+                  lead['Phone Status'] === 'Sent' && !rowStyle && "bg-emerald-500/5",
+                  rowStyle
                 )}
               >
-                <td className="font-medium text-foreground">{lead['Company Name'] || '-'}</td>
-                <td>{lead.City || '-'}</td>
-                <td>
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={lead['Phone Status'] || 'Pending'} />
-                    {lead['Phone Status'] === 'Requested' && (
-                      <div
-                        className="relative h-7 w-7"
-                        title="Gönderim için bekleniyor"
-                        style={{
-                          background: `conic-gradient(hsl(var(--cyber-lime)) ${(sendCountdowns[lead.ID || `${lead['Company Name']}-${lead.Phone}`] ?? 0) / 8 * 360}deg, hsl(var(--border)) 0deg)`,
-                          borderRadius: '9999px',
-                        }}
-                      >
-                        <div className="absolute inset-0 m-[3px] rounded-full bg-background" />
-                        <span className="absolute inset-0 flex items-center justify-center text-[10px] text-muted-foreground">
-                          {sendCountdowns[lead.ID || `${lead['Company Name']}-${lead.Phone}`] ?? 0}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                <td className="py-2 px-3">
+                  <span className={cn("font-medium", nameStyle)}>
+                    {lead['Company Name'] || '–'}
+                  </span>
                 </td>
-                <td>
+                <td className="py-2 px-2" onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={phoneStatusValue(lead['Phone Status'])}
+                    onValueChange={(value) => handlePhoneStatusChange(lead, value)}
+                  >
+                    <SelectTrigger className="h-6 min-w-0 w-[82px] text-[11px] py-0 px-2 border-border/80 [&>span]:truncate">
+                      <SelectValue>{phoneStatusLabel(phoneStatusValue(lead['Phone Status']))}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PHONE_STATUSES.map((status) => (
+                        <SelectItem key={status} value={status} className="text-xs">
+                          {phoneStatusLabel(status)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {lead['Phone Status'] === 'Requested' && (
+                    <span className="text-[10px] text-muted-foreground tabular-nums ml-0.5">
+                      {sendCountdowns[lead.ID || `${lead['Company Name']}-${lead.Phone}`] ?? 0}s
+                    </span>
+                  )}
+                </td>
+                <td className="py-2 px-2" onClick={(e) => e.stopPropagation()}>
                   <Select
                     value={lead['WhatsApp Status'] || 'Not Sent'}
                     onValueChange={(value) => handleWhatsAppStatusChange(lead, value)}
                   >
-                    <SelectTrigger className="h-9 w-[170px]">
+                    <SelectTrigger className="h-6 min-w-0 w-[88px] text-[11px] py-0 px-2 border-border/80 [&>span]:truncate">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {WHATSAPP_STATUSES.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
+                        <SelectItem key={status} value={status} className="text-xs">
+                          {t(`waStatus.${status}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </td>
-                <td className="text-center">
-                  <div className="flex items-center justify-center gap-2 flex-wrap">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(event) => handleEditMessage(event, lead)}
-                      className="text-muted-foreground hover:text-foreground"
-                      title="Mesajı Düzenle"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                <td className="py-2 px-3 text-right" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-1">
                     {lead['Lead Type'] === 'Call Only' ? (
                       <Button
+                        size="sm"
                         variant="ghost"
-                        size="icon"
                         onClick={(event) => handleOpenWhatsApp(event, lead)}
-                        className="text-emerald-500 hover:text-emerald-400"
-                        title="Telefonu Ara"
+                        className="h-7 px-2 text-emerald-600 hover:text-emerald-500 hover:bg-emerald-500/10"
+                        title={t('table.call')}
                       >
-                        <PhoneCall className="h-4 w-4" />
+                        <PhoneCall className="h-3.5 w-3.5" />
                       </Button>
                     ) : (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(event) => handleOpenWhatsApp(event, lead)}
-                        className="text-emerald-500 hover:text-emerald-400"
-                        title="WhatsApp'ı Aç"
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(event) => handleResetStatuses(event, lead)}
-                      className="text-muted-foreground hover:text-foreground"
-                      title="Statüleri Sıfırla"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                    {lead['Lead Type'] !== 'Call Only' && (
                       <>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 text-xs font-semibold"
-                              title="Strateji Değiştir"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                              title={t('table.more')}
                             >
-                              <Sparkles className="h-3 w-3" />
+                              <ChevronDown className="h-3.5 w-3.5" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={(event) => handleStrategyChange(event as any, lead, 'A')}
-                              className={lead['Active Strategy'] === 'A' ? 'bg-muted' : ''}
-                            >
-                              <span className="font-semibold mr-2">A:</span>
-                              <span className="text-xs text-muted-foreground">Girişimci (Varsayılan)</span>
+                            <DropdownMenuItem onClick={(event) => handleEditMessage(event as any, lead)}>
+                              <Pencil className="h-3.5 w-3.5 mr-2" /> {t('table.edit')}
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(event) => handleStrategyChange(event as any, lead, 'B')}
-                              className={lead['Active Strategy'] === 'B' ? 'bg-muted' : ''}
-                            >
-                              <span className="font-semibold mr-2">B:</span>
-                              <span className="text-xs text-muted-foreground">Komşu (Yerel/Samimi)</span>
+                            {lead['Lead Type'] !== 'Call Only' && (
+                              <DropdownMenuItem onClick={(event) => handleOpenWhatsApp(event as any, lead)}>
+                                <MessageCircle className="h-3.5 w-3.5 mr-2" /> WhatsApp Aç
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={(event) => handleResetStatuses(event as any, lead)}>
+                              <RotateCcw className="h-3.5 w-3.5 mr-2" /> {t('table.reset')}
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(event) => handleStrategyChange(event as any, lead, 'C')}
-                              className={lead['Active Strategy'] === 'C' ? 'bg-muted' : ''}
-                            >
-                              <span className="font-semibold mr-2">C:</span>
-                              <span className="text-xs text-muted-foreground">Fırsat (Net Fayda)</span>
+                            {onDeleteLead && (
+                              <DropdownMenuItem
+                                onClick={(e) => { e.stopPropagation(); setLeadToDelete(lead); }}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-2" /> {t('table.delete')}
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={(event) => handleStrategyChange(event as any, lead, 'A')} className={lead['Active Strategy'] === 'A' ? 'bg-muted' : ''}>
+                              {t('table.strategyA')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(event) => handleStrategyChange(event as any, lead, 'B')} className={lead['Active Strategy'] === 'B' ? 'bg-muted' : ''}>
+                              {t('table.strategyB')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(event) => handleStrategyChange(event as any, lead, 'C')} className={lead['Active Strategy'] === 'C' ? 'bg-muted' : ''}>
+                              {t('table.strategyC')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(event) => handleStrategyChange(event as any, lead, 'D')} className={lead['Active Strategy'] === 'D' ? 'bg-muted' : ''}>
+                              {t('table.strategyD')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                         <Button
+                          size="sm"
                           onClick={(event) => handleWhatsAppClick(event, lead)}
-                          className="h-8 bg-emerald-500 hover:bg-emerald-600 text-white px-3 gap-1"
-                          title="WhatsApp'a Gönder"
+                          className="h-7 bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 gap-1 text-xs"
+                          title={t('table.send')}
                         >
-                          <Send className="h-4 w-4" />
-                          Gönder
+                          <Send className="h-3.5 w-3.5" />
+                          {t('table.send')}
                         </Button>
                       </>
                     )}
                   </div>
                 </td>
               </tr>
-            ))}
+                );
+            })}
           </tbody>
         </table>
 
         {filteredLeads.length === 0 && (
-          <div className="py-12 text-center text-muted-foreground">
-            No leads found matching your criteria
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            No matching leads
           </div>
         )}
 
         {(filteredLeads.length > pagedLeads.length || visibleCount > 10) && (
-          <div className="py-6 flex justify-center gap-3">
+          <div className="py-4 flex justify-center gap-2">
             {visibleCount > 10 && (
-              <Button
-                variant="outline"
-                onClick={() => setVisibleCount((count) => Math.max(10, count - 10))}
-              >
-                Daha az yükle
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setVisibleCount((count) => Math.max(10, count - 10))}>
+                {t('table.showLess')}
               </Button>
             )}
             {filteredLeads.length > pagedLeads.length && (
-              <Button
-                variant="outline"
-                onClick={() => setVisibleCount((count) => count + 10)}
-              >
-                Daha fazla yükle ({pagedLeads.length}/{filteredLeads.length})
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setVisibleCount((count) => count + 10)}>
+                +10 ({pagedLeads.length}/{filteredLeads.length})
               </Button>
             )}
           </div>
@@ -517,15 +606,15 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Mesajı Düzenle {editingLead?.['Company Name'] ? `- ${editingLead['Company Name']}` : ''}
+              {t('table.editMessage')} {editingLead?.['Company Name'] ? `- ${editingLead['Company Name']}` : ''}
             </DialogTitle>
             <DialogDescription>
-              Strateji seçip mesaj oluştur, beğenmezsen tekrar oluştur, sonra gönder.
+              {t('table.editMessageDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Strateji Seç</Label>
+              <Label className="text-sm font-medium">{t('table.selectStrategy')}</Label>
               <RadioGroup
                 value={selectedStrategy}
                 onValueChange={(value) => setSelectedStrategy(value as 'A' | 'B' | 'C')}
@@ -534,22 +623,29 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
                 <div className="flex items-center space-x-2 p-3 border rounded-md hover:bg-muted/50">
                   <RadioGroupItem value="A" id="strategy-a" />
                   <Label htmlFor="strategy-a" className="flex-1 cursor-pointer">
-                    <div className="font-semibold">A: Fikir Alma / Beta Testi (Varsayılan)</div>
-                    <div className="text-xs text-muted-foreground">En az reddedilen yöntem. Bir şey satmıyorsun, sadece onlardan 'akıl hocası' olmalarını istiyorsun.</div>
+                    <div className="font-semibold">{t('table.strategyALabel')}</div>
+                    <div className="text-xs text-muted-foreground">{t('table.strategyADesc')}</div>
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 border rounded-md hover:bg-muted/50">
                   <RadioGroupItem value="B" id="strategy-b" />
                   <Label htmlFor="strategy-b" className="flex-1 cursor-pointer">
-                    <div className="font-semibold">B: Komşu Yaklaşımı (Yerel/Samimi)</div>
-                    <div className="text-xs text-muted-foreground">Bölgesel güven. 'Dışarıdan biri' değil, 'Bizden biri' imajı verirsin.</div>
+                    <div className="font-semibold">{t('table.strategyBLabel')}</div>
+                    <div className="text-xs text-muted-foreground">{t('table.strategyBDesc')}</div>
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 border rounded-md hover:bg-muted/50">
                   <RadioGroupItem value="C" id="strategy-c" />
                   <Label htmlFor="strategy-c" className="flex-1 cursor-pointer">
-                    <div className="font-semibold">C: Doğrudan Fayda (Net Fayda)</div>
-                    <div className="text-xs text-muted-foreground">Hiç dolandırmadan, direkt acıya dokunmak. Açık sözlü yaklaşım.</div>
+                    <div className="font-semibold">{t('table.strategyCLabel')}</div>
+                    <div className="text-xs text-muted-foreground">{t('table.strategyCDesc')}</div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 p-3 border rounded-md hover:bg-muted/50">
+                  <RadioGroupItem value="D" id="strategy-d" />
+                  <Label htmlFor="strategy-d" className="flex-1 cursor-pointer">
+                    <div className="font-semibold">{t('table.strategyDLabel')}</div>
+                    <div className="text-xs text-muted-foreground">{t('table.strategyDDesc')}</div>
                   </Label>
                 </div>
               </RadioGroup>
@@ -558,7 +654,7 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
               value={draftMessage}
               onChange={(event) => handleDraftChange(event.target.value)}
               className="min-h-[180px]"
-              placeholder="Mesajınızı buradan düzenleyin veya 'Mesaj Oluştur' butonuna basın..."
+              placeholder={t('table.messagePlaceholder')}
             />
             {regenerateError && (
               <div className="text-xs text-destructive">
@@ -573,14 +669,14 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
                 className="gap-2"
               >
                 <Sparkles className="h-4 w-4" />
-                {isGenerating ? 'Oluşturuluyor...' : 'Mesaj Oluştur'}
+                {isGenerating ? 'Creating...' : 'Create Message'}
               </Button>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setIsEditorOpen(false)}
                 >
-                  Kapat
+                  {t('table.close')}
                 </Button>
                 {editingLead && (
                   <Button
@@ -592,7 +688,7 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
                     disabled={!draftMessage.trim()}
                   >
                     <Send className="h-4 w-4" />
-                    Gönder
+                    {t('table.send')}
                   </Button>
                 )}
               </div>
@@ -600,6 +696,29 @@ export function LeadTable({ leads, onSelectLead, selectedLead, onUpdateLead }: L
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!leadToDelete} onOpenChange={(open) => !open && setLeadToDelete(null)}>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('table.delete')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('table.deleteConfirm')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{lang === 'tr' ? 'İptal' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (leadToDelete) {
+                  onDeleteLead?.(leadToDelete);
+                  setLeadToDelete(null);
+                }
+              }}
+            >
+              {t('table.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,5 +1,7 @@
-import { MessageSquare, RefreshCw, UserPlus, Calendar } from 'lucide-react';
+import { MessageSquare, RefreshCw, UserPlus, Calendar, RotateCcw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ActivityItem {
   id: string;
@@ -11,6 +13,7 @@ interface ActivityItem {
 
 interface ActivityFeedProps {
   activities: ActivityItem[];
+  onReset?: () => void;
 }
 
 const activityConfig = {
@@ -32,16 +35,24 @@ const activityConfig = {
   },
 };
 
-export function ActivityFeed({ activities }: ActivityFeedProps) {
+export function ActivityFeed({ activities, onReset }: ActivityFeedProps) {
+  const { t } = useLanguage();
   return (
     <div className="chart-container animate-slide-up delay-400" style={{ animationFillMode: 'forwards', opacity: 0 }}>
-      <h3 className="text-lg font-semibold text-foreground mb-1">Success Timeline</h3>
-      <p className="text-sm text-muted-foreground mb-6">Recent actions</p>
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <h3 className="text-lg font-semibold text-foreground">{t('activity.successTimeline')}</h3>
+        {onReset && (
+          <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0 gap-1" onClick={onReset}>
+            <RotateCcw className="h-3 w-3" /> {t('activity.reset')}
+          </Button>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground mb-6">{t('activity.recentActions')}</p>
       
       <div className="space-y-0 custom-scrollbar max-h-[280px] overflow-y-auto pr-2">
         {activities.length === 0 && (
           <div className="text-sm text-muted-foreground py-6 text-center">
-            Veri bekleniyor...
+            {t('activity.waitingForData')}
           </div>
         )}
         {activities.map((activity) => {

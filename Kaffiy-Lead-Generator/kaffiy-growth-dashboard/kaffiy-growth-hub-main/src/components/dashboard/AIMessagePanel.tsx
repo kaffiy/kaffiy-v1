@@ -1,18 +1,29 @@
 import { X, Sparkles, MapPin, Phone, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from './StatusBadge';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { LeadRecord } from '@/types/leads';
+import { useLanguage } from '@/context/LanguageContext';
+
+const STRATEGIES = ['A', 'B', 'C', 'D'] as const;
 
 interface AIMessagePanelProps {
   lead: LeadRecord;
   onClose: () => void;
+  onUpdateLead?: (lead: LeadRecord, updates: Partial<LeadRecord>) => void;
 }
 
-export function AIMessagePanel({ lead, onClose }: AIMessagePanelProps) {
+export function AIMessagePanel({ lead, onClose, onUpdateLead }: AIMessagePanelProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
+  const [selectedStrategy, setSelectedStrategy] = useState<'A' | 'B' | 'C' | 'D'>(
+    (lead['Active Strategy'] as 'A' | 'B' | 'C' | 'D') || 'A'
+  );
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
   const buildWhatsAppMessage = (currentLead: LeadRecord) => {
     if (currentLead['Ready Message']) {
       return currentLead['Ready Message'];
@@ -23,9 +34,9 @@ export function AIMessagePanel({ lead, onClose }: AIMessagePanelProps) {
     const companyName = currentLead['Company Name'] || 'Kafe';
     const review = (currentLead['Last Review'] || '').replace(/["']/g, '');
     if (review) {
-      return `Merhaba ${companyName}! Yorumunuzda bahsettiğiniz ${review} detayı çok hoşuma gitti. Kaffiy dijital sadakat sistemiyle misafirlerinize kolayca ödül sunmanıza yardımcı olabiliriz.`;
+      return `Merhaba ${companyName}! Yorumunuzda bahsettiğiniz ${review} detayı çok hoşuma gitti. Kaffiy müşteri geri kazanma ve dijital sadakat sistemiyle misafirlerinize kolayca ödül sunmanıza yardımcı olabiliriz.`;
     }
-    return `Merhaba ${companyName}! Kaffiy dijital sadakat sistemiyle misafirlerinize kolayca ödül sunmanıza yardımcı olabiliriz.`;
+    return `Merhaba ${companyName}! Kaffiy müşteri geri kazanma ve dijital sadakat sistemiyle misafirlerinize kolayca ödül sunmanıza yardımcı olabiliriz.`;
   };
   const initialMessage = buildWhatsAppMessage(lead);
   const [message, setMessage] = useState(initialMessage);
@@ -33,19 +44,73 @@ export function AIMessagePanel({ lead, onClose }: AIMessagePanelProps) {
   // Update message when lead changes
   useEffect(() => {
     setMessage(buildWhatsAppMessage(lead));
+    setSelectedStrategy((lead['Active Strategy'] as 'A' | 'B' | 'C' | 'D') || 'A');
   }, [lead]);
 
+  const handleCreateMessage = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/regenerate_message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cafeName: lead['Company Name'],
+          city: lead.City,
+          review: lead['Last Review'],
+          strategy: selectedStrategy,
+          leadId: lead.ID,
+          phone: lead.Phone,
+        }),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || t('table.messageError'));
+      }
+      const data = await response.json();
+      const generated = data.message || '';
+      if (generated) {
+        setMessage(generated);
+        onUpdateLead?.(lead, { 'Ready Message': generated, 'Active Strategy': selectedStrategy });
+        toast({ title: t('panel.createMessage'), description: t('panel.messageType') + ' ' + selectedStrategy });
+      }
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : t('table.messageError'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleSendWhatsApp = () => {
-    // Format phone number for WhatsApp (remove spaces and special chars)
+    if (isSendingWhatsApp) return;
+    setIsSendingWhatsApp(true);
+    setTimeout(() => setIsSendingWhatsApp(false), 5000);
+
     const formattedPhone = (lead.Phone || '').replace(/[\s\-\(\)]/g, '');
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `whatsapp://send?phone=${formattedPhone}&text=${encodedMessage}`;
-    
+
     window.open(whatsappUrl, '_blank');
-    
+
+    onUpdateLead?.(lead, { 'WhatsApp Status': 'Pending' });
+
+    fetch('/api/request_press_enter', { method: 'POST' }).catch(() => {});
+    fetch('/api/log_sent_message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        companyName: lead['Company Name'],
+        phone: lead.Phone,
+        message,
+      }),
+    }).catch(() => {});
+
     toast({
-      title: "Opening WhatsApp",
-      description: `Sending message to ${lead['Company Name'] || 'lead'}`,
+      title: t('panel.whatsappOpening'),
+      description: t('panel.whatsappEnterDesc'),
     });
   };
 
@@ -111,8 +176,41 @@ export function AIMessagePanel({ lead, onClose }: AIMessagePanelProps) {
             </h4>
             <div className="p-4 rounded-xl bg-accent/10 border border-accent/20">
               <p className="text-sm text-foreground italic leading-relaxed">
-                {lead['Last Review'] || 'Henüz bir yorum bulunmuyor.'}
+                {lead['Last Review'] || t('panel.noReviewYet')}
               </p>
+            </div>
+          </div>
+
+          {/* Message type & preparation */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-cyber-lime" />
+              {t('panel.messageType')}
+            </h4>
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={selectedStrategy} onValueChange={(v) => setSelectedStrategy(v as 'A' | 'B' | 'C' | 'D')}>
+                <SelectTrigger className="w-[200px] h-9 text-sm border-border/80">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STRATEGIES.map((s) => (
+                    <SelectItem key={s} value={s} className="text-sm">
+                      {t(`table.strategy${s}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCreateMessage}
+                disabled={isGenerating}
+                className="h-9 gap-1.5 border-cyber-lime/50 text-cyber-lime hover:bg-cyber-lime/10"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                {isGenerating ? '…' : t('panel.createMessage')}
+              </Button>
             </div>
           </div>
 
@@ -141,7 +239,9 @@ export function AIMessagePanel({ lead, onClose }: AIMessagePanelProps) {
         {/* Footer - WhatsApp Button */}
         <div className="p-6 border-t border-border flex-shrink-0">
           <Button 
+            type="button"
             onClick={handleSendWhatsApp}
+            disabled={isSendingWhatsApp}
             className="w-full h-12 bg-cyber-lime hover:bg-cyber-lime/90 text-cyber-lime-foreground font-semibold text-base btn-glow gap-2"
           >
             <svg 
