@@ -23,16 +23,26 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
   { id: "card-trial-progress", name: "Deneme İlerlemesi", description: "Premium deneme süresi takibi" },
 ];
 
+export const LOCKED_DASHBOARD_CARDS: CardId[] = [
+  "card-weekly-stats",
+  "card-churn-alert",
+];
+
 type DashboardCardVisibility = { [key in CardId]: boolean };
 
 const defaultVisibility: DashboardCardVisibility = {
   "card-visits-chart": true,
   "card-quick-actions": true,
-  "card-weekly-stats": true,
+  "card-weekly-stats": false,
   "card-active-campaigns": true,
-  "card-churn-alert": true,
+  "card-churn-alert": false,
   "card-trial-progress": true,
 };
+
+const lockedOverrides: DashboardCardVisibility = LOCKED_DASHBOARD_CARDS.reduce(
+  (acc, id) => ({ ...acc, [id]: false }),
+  {} as DashboardCardVisibility
+);
 
 const COOKIE_NAME = "fidelio-dashboard-cards";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
@@ -59,6 +69,7 @@ interface DashboardCardsContextType {
   setCardVisibility: (cardId: CardId, visible: boolean) => void;
   resetToDefault: () => void;
   getCardVisibility: (cardId: CardId) => boolean;
+  isCardLocked: (cardId: CardId) => boolean;
 }
 
 const DashboardCardsContext = createContext<DashboardCardsContextType | undefined>(undefined);
@@ -70,12 +81,12 @@ export const DashboardCardsProvider = ({ children }: { children: ReactNode }) =>
       if (stored) {
         const parsed = JSON.parse(stored);
         // Merge stored settings with default to handle new cards or removed cards gracefully
-        return { ...defaultVisibility, ...parsed };
+        return { ...defaultVisibility, ...parsed, ...lockedOverrides };
       }
     } catch (error) {
       console.error("Error loading dashboard card settings:", error);
     }
-    return defaultVisibility;
+    return { ...defaultVisibility, ...lockedOverrides };
   });
 
   useEffect(() => {
@@ -87,6 +98,7 @@ export const DashboardCardsProvider = ({ children }: { children: ReactNode }) =>
   }, [cardVisibility]);
 
   const toggleCard = (cardId: CardId) => {
+    if (LOCKED_DASHBOARD_CARDS.includes(cardId)) return;
     setCardVisibilityState((prev) => ({
       ...prev,
       [cardId]: !prev[cardId],
@@ -94,6 +106,7 @@ export const DashboardCardsProvider = ({ children }: { children: ReactNode }) =>
   };
 
   const setCardVisibility = (cardId: CardId, visible: boolean) => {
+    if (LOCKED_DASHBOARD_CARDS.includes(cardId)) return;
     setCardVisibilityState((prev) => ({
       ...prev,
       [cardId]: visible,
@@ -101,12 +114,16 @@ export const DashboardCardsProvider = ({ children }: { children: ReactNode }) =>
   };
 
   const resetToDefault = () => {
-    setCardVisibilityState(defaultVisibility);
+    setCardVisibilityState({ ...defaultVisibility, ...lockedOverrides });
   };
 
   const getCardVisibility = (cardId: CardId): boolean => {
+    if (LOCKED_DASHBOARD_CARDS.includes(cardId)) return false;
     return cardVisibility[cardId] ?? true;
   };
+
+  const isCardLocked = (cardId: CardId): boolean =>
+    LOCKED_DASHBOARD_CARDS.includes(cardId);
 
   return (
     <DashboardCardsContext.Provider
@@ -116,6 +133,7 @@ export const DashboardCardsProvider = ({ children }: { children: ReactNode }) =>
         setCardVisibility,
         resetToDefault,
         getCardVisibility,
+        isCardLocked,
       }}
     >
       {children}

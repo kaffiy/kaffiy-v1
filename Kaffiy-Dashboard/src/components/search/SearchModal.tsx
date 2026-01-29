@@ -30,7 +30,7 @@ import {
   AlertCircle,
   Timer,
 } from "lucide-react";
-import { DASHBOARD_CARDS } from "@/contexts/DashboardCardsContext";
+import { LOCKED_DASHBOARD_CARDS } from "@/contexts/DashboardCardsContext";
 import { cn } from "@/lib/utils";
 
 interface SearchItem {
@@ -42,6 +42,8 @@ interface SearchItem {
   path: string;
   keywords?: string[];
 }
+
+const lockedCardIds = new Set(LOCKED_DASHBOARD_CARDS);
 
 const searchItems: SearchItem[] = [
   // Pages
@@ -209,7 +211,7 @@ const searchItems: SearchItem[] = [
     path: "/",
     keywords: ["deneme", "trial", "premium", "abonelik"],
   },
-];
+].filter((item) => item.category !== "card" || !lockedCardIds.has(item.id));
 
 interface SearchModalProps {
   open: boolean;

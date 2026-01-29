@@ -53,7 +53,7 @@ const Settings = () => {
   const navigate = useNavigate();
   const { isPremium, togglePremium } = usePremium();
   const { toast } = useToast();
-  const { cardVisibility, toggleCard, resetToDefault } = useDashboardCards();
+  const { cardVisibility, toggleCard, resetToDefault, isCardLocked } = useDashboardCards();
   const { theme, toggleTheme, palette, setPalette } = useTheme();
   const { isSimpleView, setViewMode } = useDashboardView();
   const [activeTab, setActiveTab] = useState("profile");
@@ -563,20 +563,30 @@ const Settings = () => {
                   </Button>
                     </div>
                 <div className="space-y-3">
-                  {DASHBOARD_CARDS.map((card) => (
-                    <div key={card.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20">
-                    <div>
-                        <p className="font-medium text-foreground">{card.name}</p>
-                        {card.description && (
-                          <p className="text-xs text-muted-foreground">{card.description}</p>
+                  {DASHBOARD_CARDS.map((card) => {
+                    const isLocked = isCardLocked(card.id);
+                    return (
+                      <div
+                        key={card.id}
+                        className={cn(
+                          "flex items-center justify-between p-3 rounded-xl bg-muted/20",
+                          isLocked && "opacity-60"
                         )}
-                    </div>
-                      <Switch
-                        checked={cardVisibility[card.id]}
-                        onCheckedChange={() => toggleCard(card.id)}
-                      />
-                  </div>
-                  ))}
+                      >
+                        <div>
+                          <p className="font-medium text-foreground">{card.name}</p>
+                          {card.description && (
+                            <p className="text-xs text-muted-foreground">{card.description}</p>
+                          )}
+                        </div>
+                        <Switch
+                          disabled={isLocked}
+                          checked={cardVisibility[card.id]}
+                          onCheckedChange={() => toggleCard(card.id)}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
