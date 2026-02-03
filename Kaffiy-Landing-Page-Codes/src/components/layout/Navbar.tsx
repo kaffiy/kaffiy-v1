@@ -1,22 +1,17 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Globe, Moon, Sun } from "lucide-react";
+import { Menu, X, Moon, Sun } from "lucide-react";
 import { Logo } from "@/components/common/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { useThemeMode } from "@/hooks/use-theme";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { AnnouncementBar } from "./AnnouncementBar";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { language, setLanguage, t } = useI18n();
+  const { t } = useI18n();
   const { isDark, setIsDark } = useThemeMode();
 
   const navLinks = [
@@ -35,10 +30,11 @@ export function Navbar() {
   };
 
   return (
-    <header 
+    <header
       className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b bg-white/80 dark:bg-slate-900/90 border-slate-200/60 dark:border-slate-700/50 shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]"
       style={{ transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}
     >
+      <AnnouncementBar />
       <nav className="section-container">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -82,22 +78,6 @@ export function Navbar() {
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <Globe className="w-4 h-4" />
-                  {language.toUpperCase()}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setLanguage("en")}>
-                  🇬🇧 English
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLanguage("tr")}>
-                  🇹🇷 Türkçe
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
 
             <Button
               asChild
@@ -126,7 +106,7 @@ export function Navbar() {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div 
+          <div
             className="md:hidden py-4 border-t border-slate-200/60 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/98 backdrop-blur-md"
             style={{ transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}
           >
@@ -156,25 +136,7 @@ export function Navbar() {
                 </Link>
               ))}
 
-              {/* Mobile Language Switcher - 44px min touch targets */}
-              <div className="flex gap-2 px-4 py-3">
-                <Button
-                  variant={language === "en" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setLanguage("en")}
-                  className="flex-1 min-h-[44px]"
-                >
-                  🇬🇧 EN
-                </Button>
-                <Button
-                  variant={language === "tr" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setLanguage("tr")}
-                  className="flex-1 min-h-[44px]"
-                >
-                  🇹🇷 TR
-                </Button>
-              </div>
+
 
               <div className="pt-3 px-4">
                 <Button

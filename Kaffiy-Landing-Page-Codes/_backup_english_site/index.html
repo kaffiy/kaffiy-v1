@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaffiy | WhatsApp-Driven Customer Loyalty Engine</title>
+    <meta name="description"
+        content="Turn WhatsApp into your customer loyalty engine. No apps, no cards. Get the AppSumo Lifetime Deal now.">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        night: {
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @keyframes floating {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        .animate-floating {
+            animation: floating 4s ease-in-out infinite;
+        }
+
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .emerald-glow:hover {
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+    </style>
+
+    <!-- Language Auto-detect (Optional but kept from previous step for consistency) -->
+    <script>
+            (function () {
+                const userLang = navigator.language || navigator.userLanguage;
+                if (userLang.toLowerCase().startsWith('tr') && !localStorage.getItem('preferredLang')) {
+                    // If user is Turkish and hasn't explicitly stayed on Global
+                    // window.location.href = 'tr.html'; 
+                    // Commented out to prioritize the new design visibility, user can click TR switch
+                }
+            })();
+    </script>
+</head>
+
+<body class="bg-[#f8fafc] text-night-900 font-sans antialiased">
+
+    <!-- NAVBAR -->
+    <nav class="sticky top-0 z-50 glass-nav border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <span class="text-2xl font-extrabold tracking-tighter text-night-900">Kaffiy<span
+                            class="text-emerald-500">.</span></span>
+                </div>
+
+                <!-- Links -->
+                <div class="flex items-center space-x-4">
+                    <a href="/tr.html" onclick="localStorage.setItem('preferredLang', 'tr')"
+                        class="text-sm font-semibold text-gray-600 hover:text-night-900 transition-colors flex items-center">
+                        <span class="mr-1">🇹🇷</span> TR Switch
+                    </a>
+                    <a href="#pricing"
+                        class="hidden sm:inline-flex bg-night-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-night-950 transition-all shadow-lg">
+                        Get Lifetime Access
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="relative pt-12 pb-20 lg:pt-24 lg:pb-32 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
+
+                <!-- Left Side: Text -->
+                <div class="z-10 text-center lg:text-left">
+                    <div
+                        class="inline-flex items-center px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold mb-6 uppercase tracking-wider">
+                        🚀 New on AppSumo
+                    </div>
+                    <h1 class="text-5xl lg:text-7xl font-extrabold text-night-950 leading-[1.1] mb-6">
+                        Turn WhatsApp into your <span class="text-emerald-500">Loyalty Engine.</span>
+                    </h1>
+                    <p class="text-lg lg:text-xl text-gray-600 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                        No apps to download. No plastic cards. Just a QR code and the app your customers already use.
+                    </p>
+
+                    <div class="space-y-4">
+                        <a href="#pricing"
+                            class="emerald-glow inline-flex items-center justify-center bg-emerald-500 text-white px-10 py-5 rounded-2xl text-xl font-extrabold shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all transform hover:-translate-y-1">
+                            Get Lifetime Deal - $49
+                        </a>
+                        <p class="text-sm text-gray-400 font-medium italic">
+                            No credit card required for demo.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right Side: Visual -->
+                <div class="mt-16 lg:mt-0 relative flex justify-center lg:justify-end">
+                    <!-- Decor Circles -->
+                    <div
+                        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl">
+                    </div>
+
+                    <!-- iPhone Mockup -->
+                    <div
+                        class="relative w-72 h-[580px] bg-night-950 rounded-[3rem] p-3 shadow-2xl animate-floating border-[6px] border-night-900">
+                        <!-- Screen -->
+                        <div class="w-full h-full bg-white rounded-[2.5rem] overflow-hidden relative">
+                            <!-- Notch -->
+                            <div
+                                class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-night-950 rounded-b-2xl z-20">
+                            </div>
+
+                            <!-- WhatsApp UI Placeholder -->
+                            <div class="p-6 pt-12">
+                                <div class="flex items-center space-x-3 mb-8">
+                                    <div
+                                        class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xl">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-gray-400">WhatsApp</p>
+                                        <p class="text-sm font-bold">Kaffiy Bot</p>
+                                    </div>
+                                </div>
+
+                                <!-- Notification Toast -->
+                                <div
+                                    class="bg-gray-50 p-4 rounded-2xl border border-gray-100 shadow-sm transform transition-all hover:scale-105">
+                                    <p class="text-sm text-night-900 font-medium">
+                                        🎉 You earned 1 Star from <span class="font-bold">Joe's Coffee!</span>
+                                    </p>
+                                    <p class="text-xs text-gray-400 mt-1">Check your balance with #stars</p>
+                                </div>
+
+                                <div class="mt-8 space-y-4">
+                                    <div class="h-2 w-3/4 bg-gray-100 rounded-full"></div>
+                                    <div class="h-2 w-1/2 bg-gray-100 rounded-full"></div>
+                                    <div class="h-2 w-full bg-gray-100 rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- LOGO CLOUD -->
+    <section class="py-12 border-y border-gray-100 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm font-bold text-gray-400 uppercase tracking-[0.3em] mb-10">
+                Trusted by next-gen cafes in...
+            </p>
+            <div class="flex flex-wrap justify-center items-center gap-8 md:gap-20 opacity-40">
+                <span class="text-2xl font-extrabold tracking-tighter text-night-900">ISTANBUL</span>
+                <span class="text-2xl font-extrabold tracking-tighter text-night-900">LONDON</span>
+                <span class="text-2xl font-extrabold tracking-tighter text-night-900">BERLIN</span>
+                <span class="text-2xl font-extrabold tracking-tighter text-night-900">NYC</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="py-24 bg-[#f8fafc]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-5xl font-extrabold text-night-950 mb-4">Why Kaffiy is different?</h2>
+                <div class="h-1.5 w-20 bg-emerald-500 mx-auto rounded-full"></div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div
+                    class="bg-white p-10 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:border-emerald-100 transition-all group">
+                    <div
+                        class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 mb-8 group-hover:bg-emerald-500 group-hover:text-white transition-all transform group-hover:rotate-6">
+                        <i class="fas fa-mobile-alt text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Zero Friction.</h3>
+                    <p class="text-gray-600 leading-relaxed">Customers scan and go. No app store login needed. No
+                        storage issues. Everything stays in WhatsApp.</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div
+                    class="bg-white p-10 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:border-emerald-100 transition-all group">
+                    <div
+                        class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 mb-8 group-hover:bg-emerald-500 group-hover:text-white transition-all transform group-hover:rotate-6">
+                        <i class="fas fa-database text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Own Your Data.</h3>
+                    <p class="text-gray-600 leading-relaxed">Stop renting your customers from delivery apps. Build your
+                        own direct communication line via WhatsApp.</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div
+                    class="bg-white p-10 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:border-emerald-100 transition-all group">
+                    <div
+                        class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 mb-8 group-hover:bg-emerald-500 group-hover:text-white transition-all transform group-hover:rotate-6">
+                        <i class="fas fa-bolt text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">10-Second Setup.</h3>
+                    <p class="text-gray-600 leading-relaxed">Print your QR, stick it on the counter. Done. No complex
+                        POS integrations or hardware required.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="py-24 bg-night-950 text-white overflow-hidden relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <h2 class="text-3xl lg:text-5xl font-extrabold text-center mb-20 whitespace-nowrap overflow-hidden">
+                1. Scan QR <span class="mx-4 text-emerald-500">→</span>
+                2. Chat on WhatsApp <span class="mx-4 text-emerald-500">→</span>
+                3. Get Rewarded.
+            </h2>
+
+            <div class="grid md:grid-cols-3 gap-12 max-w-4xl mx-auto text-center">
+                <div class="relative">
+                    <div
+                        class="text-6xl font-black text-white/10 absolute -top-10 left-1/2 -translate-x-1/2 select-none">
+                        01</div>
+                    <div class="relative z-10 font-bold text-xl">Customer scans the counter QR.</div>
+                </div>
+                <div class="relative">
+                    <div
+                        class="text-6xl font-black text-white/10 absolute -top-10 left-1/2 -translate-x-1/2 select-none">
+                        02</div>
+                    <div class="relative z-10 font-bold text-xl">Automatically opens WhatsApp.</div>
+                </div>
+                <div class="relative">
+                    <div
+                        class="text-6xl font-black text-white/10 absolute -top-10 left-1/2 -translate-x-1/2 select-none">
+                        03</div>
+                    <div class="relative z-10 font-bold text-xl">Points are added instantly.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING -->
+    <section id="pricing" class="py-24 bg-[#f8fafc]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-lg mx-auto bg-white rounded-[3rem] p-12 border-4 border-emerald-500 shadow-2xl relative">
+                <div
+                    class="absolute -top-6 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-6 py-2 rounded-full font-bold text-sm tracking-widest uppercase">
+                    AppSumo Limited Deal
+                </div>
+
+                <div class="text-center mb-10">
+                    <h3 class="text-2xl font-extrabold text-night-950 mb-4">Early Adopter Lifetime License</h3>
+                    <div class="flex items-center justify-center space-x-4">
+                        <span class="text-3xl text-gray-300 line-through font-bold">$499</span>
+                        <span class="text-6xl font-black text-night-950">$49</span>
+                    </div>
+                    <p class="text-gray-400 font-bold mt-2">One-time payment. Forever yours.</p>
+                </div>
+
+                <ul class="space-y-4 mb-12">
+                    <li class="flex items-center text-night-900 font-semibold">
+                        <i class="fas fa-check-circle text-emerald-500 mr-3"></i> Unlimited Customers
+                    </li>
+                    <li class="flex items-center text-night-900 font-semibold">
+                        <i class="fas fa-check-circle text-emerald-500 mr-3"></i> Unlimited Messages
+                    </li>
+                    <li class="flex items-center text-night-900 font-semibold">
+                        <i class="fas fa-check-circle text-emerald-500 mr-3"></i> Custom Branding
+                    </li>
+                    <li class="flex items-center text-night-900 font-semibold">
+                        <i class="fas fa-check-circle text-emerald-500 mr-3"></i> Advanced Analytics
+                    </li>
+                    <li class="flex items-center text-night-900 font-semibold">
+                        <i class="fas fa-check-circle text-emerald-500 mr-3"></i> Lifetime Updates
+                    </li>
+                </ul>
+
+                <a href="#"
+                    class="block w-full text-center bg-emerald-500 text-white py-6 rounded-2xl text-2xl font-black shadow-xl shadow-emerald-500/30 hover:bg-emerald-600 transition-all emerald-glow">
+                    Buy Now & Start Growing
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-white py-20 border-t border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-10">
+                <div>
+                    <span class="text-2xl font-extrabold tracking-tighter text-night-900">Kaffiy<span
+                            class="text-emerald-500">.</span></span>
+                    <p class="text-gray-400 text-sm mt-2 font-medium">© 2026 Kaffiy Inc. All rights reserved.</p>
+                </div>
+
+                <div class="flex flex-col items-center md:items-end">
+                    <a href="mailto:hello@kaffiy.com"
+                        class="text-lg font-bold text-night-900 hover:text-emerald-500 transition-colors">hello@kaffiy.com</a>
+                    <div class="flex space-x-6 mt-4">
+                        <a href="#" class="text-gray-400 hover:text-night-900 transition-colors text-xl"><i
+                                class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-night-900 transition-colors text-xl"><i
+                                class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-night-900 transition-colors text-xl"><i
+                                class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

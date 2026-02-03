@@ -4,11 +4,11 @@ export function DashboardPreviewSection() {
   const { t } = useI18n();
 
   return (
-    <section 
+    <section
       className="section-padding relative overflow-hidden bg-section"
     >
       {/* Subtle theme-colored gradient */}
-      <div 
+      <div
         className="absolute inset-0 pointer-events-none z-0"
         style={{
           background: `radial-gradient(ellipse at 50% 50%, hsl(var(--primary) / 0.05) 0%, transparent 65%)`,
@@ -16,11 +16,11 @@ export function DashboardPreviewSection() {
           transition: 'background 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       />
-      
+
       <div className="section-container relative z-10">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 md:mb-12">
-            <h2 
+            <h2
               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-4 sm:mb-6 tracking-tight text-slate-900 dark:text-slate-50"
               style={{
                 letterSpacing: '-0.04em',
@@ -33,8 +33,8 @@ export function DashboardPreviewSection() {
             </p>
           </div>
 
-          {/* Static Dashboard Image */}
-          <div className="animate-fade-in-up flex items-center justify-center mb-10 md:mb-12">
+          {/* Static Dashboard Image - Hidden on mobile */}
+          <div className="animate-fade-in-up md:flex items-center justify-center mb-10 md:mb-12 hidden">
             <div className="w-full max-w-5xl xl:max-w-6xl">
               <div className="mb-3 text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300">
                 Dashboard Önizlemesi
@@ -52,7 +52,8 @@ export function DashboardPreviewSection() {
 
           {/* Live Previews */}
           <div className="animate-fade-in-up grid gap-6 md:gap-8 max-w-6xl xl:max-w-7xl mx-auto w-full">
-            <div>
+            {/* Masaüstü dashboard: mobilde gizle (küçük ekranda barista görünümü oluyor) */}
+            <div className="hidden md:block">
               <div className="mb-3 text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300">
                 Kafe Sahibi Dashboard (Masaüstü)
               </div>

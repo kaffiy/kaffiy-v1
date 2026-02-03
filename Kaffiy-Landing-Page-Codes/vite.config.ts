@@ -28,6 +28,13 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    build: {
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, "index.html"),
+        },
+      },
+    },
     define: {
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
     },

@@ -12,7 +12,7 @@ const translations = {
   en: {
     // Logo
     "logo.subtitle": "AI Business Partner",
-    
+
     // Navbar
     "nav.home": "Home",
     "nav.howItWorks": "How it works",
@@ -29,13 +29,13 @@ const translations = {
     "hero.cta.secondary": "Request a Free Demo",
 
     // Why Kaffiy (Problem & Solution)
-    "whyKaffiy.title": "High-Tech, Revenue-Driven Showcase",
-    "whyKaffiy.card1.title": "Lost Customer Radar (Churn Recovery)",
-    "whyKaffiy.card1.desc": "Detect regulars who stop visiting and auto-send the right offer.",
-    "whyKaffiy.card2.title": "Predictive Consumer Analytics",
-    "whyKaffiy.card2.desc": "Time the right message to lift revenue.",
-    "whyKaffiy.card3.title": "Cross-Merchant Network",
-    "whyKaffiy.card3.desc": "Local businesses in the Kaffiy network refer customers smartly.",
+    "whyKaffiy.title": "The Formula for Growth in Tough Times",
+    "whyKaffiy.card1.title": "Win Back Lost Customers",
+    "whyKaffiy.card1.desc": "AI detects customers drifting away and automatically brings them back with the right offer.",
+    "whyKaffiy.card2.title": "Smart Personalized Campaigns",
+    "whyKaffiy.card2.desc": "Don't spam everyone. Segment your customers and send targeted offers that motivate frequent visits.",
+    "whyKaffiy.card3.title": "Boost Revenue & Resilience",
+    "whyKaffiy.card3.desc": "Your loyal customers are your safety net. Revitalize dropping foot traffic and secure your cash flow.",
 
     // How it works
     "howItWorks.title": "How it works",
@@ -121,7 +121,7 @@ const translations = {
     // Privacy page
     "privacy.title": "Privacy Policy",
     "privacy.subtitle": "Your privacy matters. Here's how we handle data.",
-    
+
     // About page
     "about.hero.title": "Coffee Passion Meets Technology.",
     "about.hero.p1": "Kaffiy is a QR code-based smart loyalty system for cafés. It works in the cloud, requires no app download. Customers scan QR codes at checkout to collect points, and you manage your business with real-time data analytics.",
@@ -142,7 +142,7 @@ const translations = {
   tr: {
     // Logo
     "logo.subtitle": "Yapay Zeka İşletme Ortağı",
-    
+
     // Navbar
     "nav.home": "Ana Sayfa",
     "nav.howItWorks": "Nasıl Çalışır",
@@ -159,13 +159,13 @@ const translations = {
     "hero.cta.secondary": "Ücretsiz Demo İsteyin",
 
     // Why Kaffiy (Problem & Solution)
-    "whyKaffiy.title": "Yüksek Teknoloji & Ciro Odaklı Vitrin",
-    "whyKaffiy.card1.title": "Kayıp Müşteri Radarı (Churn Recovery)",
-    "whyKaffiy.card1.desc": "Gelmesi kesilen müşteriyi tespit eder, doğru teklifi otomatik yollar.",
-    "whyKaffiy.card2.title": "Prediktif Tüketici Analizi",
-    "whyKaffiy.card2.desc": "Doğru anda doğru mesajla cironuzu artırın.",
-    "whyKaffiy.card3.title": "Çapraz Esnaf Ağı",
-    "whyKaffiy.card3.desc": "Kaffiy ağındaki işletmeler akıllı yönlendirme yapar.",
+    "whyKaffiy.title": "İşletmenizi Büyüten 3 Kritik Hamle",
+    "whyKaffiy.card1.title": "Kayıp Müşterileri Geri Kazanın",
+    "whyKaffiy.card1.desc": "Gelmesi kesilen müşteriyi yapay zeka tespit eder, otomatik teklif göndererek dükkanınıza geri döndürür.",
+    "whyKaffiy.card2.title": "Kişiye Özel Kampanya & Motivasyon",
+    "whyKaffiy.card2.desc": "Herkese aynı mesajı atmayın. Müşterilerinize özel, onları daha sık gelmeye motive edecek nokta atışı kampanyalar sunun.",
+    "whyKaffiy.card3.title": "Cironuzu & Nakit Akışınızı Artırın",
+    "whyKaffiy.card3.desc": "Ekonomik belirsizlikte en büyük gücünüz sadık müşterilerinizdir. Azalan müşteri trafiğini canlandırarak gelirinizi tekrar yükseltin.",
 
     // How it works
     "howItWorks.title": "Nasıl çalışır?",
@@ -251,7 +251,7 @@ const translations = {
     // Privacy page
     "privacy.title": "Gizlilik Politikası",
     "privacy.subtitle": "Gizliliğiniz önemli. Verileri nasıl işlediğimizi anlattık.",
-    
+
     // About page
     "about.hero.title": "Kahve Tutkusu, Teknolojiyle Buluştu.",
     "about.hero.p1": "Kaffiy, kafeler için QR kod tabanlı akıllı sadakat sistemidir. Bulut sistemi üzerinden çalışır, uygulama indirme gerektirmez. Müşteriler kasada QR kodu taratarak puan toplar, siz de gerçek zamanlı veri analizi ile işletmenizi yönetirsiniz.",
