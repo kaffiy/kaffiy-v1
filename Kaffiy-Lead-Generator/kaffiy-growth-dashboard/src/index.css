@@ -1,0 +1,446 @@
+/* Kaffiy AI Sales Hub - Premium Dark Theme with Coffee Brown & Cyber Lime */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Mode - Premium Coffee */
+    --background: 30 15% 95%;
+    --foreground: 25 25% 12%;
+
+    --card: 30 20% 92%;
+    --card-foreground: 25 25% 12%;
+
+    --popover: 30 20% 94%;
+    --popover-foreground: 25 25% 12%;
+
+    /* Deep Espresso Brown */
+    --primary: 25 40% 25%;
+    --primary-foreground: 80 100% 95%;
+
+    /* Warm Cream */
+    --secondary: 35 25% 88%;
+    --secondary-foreground: 25 25% 20%;
+
+    /* Soft Latte */
+    --muted: 30 15% 85%;
+    --muted-foreground: 25 15% 45%;
+
+    /* Coffee Accent */
+    --accent: 25 35% 35%;
+    --accent-foreground: 80 100% 95%;
+
+    /* Cyber Lime - Primary Action Color */
+    --cyber-lime: 80 100% 50%;
+    --cyber-lime-foreground: 25 25% 8%;
+
+    /* Success - Cyber Lime variant */
+    --success: 80 100% 50%;
+    --success-foreground: 25 25% 8%;
+
+    /* Warning Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 25 25% 12%;
+
+    /* Status Colors - New System */
+    --status-ready: 80 100% 50%;
+    --status-sent: 210 80% 55%;
+    --status-analyzing: 280 70% 60%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 30 15% 82%;
+    --input: 30 15% 82%;
+    --ring: 80 100% 50%;
+
+    --radius: 0.75rem;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(25 25% 12% / 0.03);
+    --shadow-md: 0 4px 6px -1px hsl(25 25% 12% / 0.05), 0 2px 4px -2px hsl(25 25% 12% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(25 25% 12% / 0.08), 0 4px 6px -4px hsl(25 25% 12% / 0.05);
+    --shadow-glow: 0 0 30px hsl(80 100% 50% / 0.3);
+    --shadow-glow-strong: 0 0 40px hsl(80 100% 50% / 0.5), 0 0 80px hsl(80 100% 50% / 0.25);
+
+    --sidebar-background: 30 20% 92%;
+    --sidebar-foreground: 25 25% 20%;
+    --sidebar-primary: 25 40% 25%;
+    --sidebar-primary-foreground: 80 100% 95%;
+    --sidebar-accent: 35 25% 88%;
+    --sidebar-accent-foreground: 25 25% 20%;
+    --sidebar-border: 30 15% 82%;
+    --sidebar-ring: 80 100% 50%;
+  }
+
+  .dark {
+    /* Dark Mode - Rich Coffee Night with Cyber Lime */
+    --background: 25 20% 6%;
+    --foreground: 40 15% 90%;
+
+    --card: 25 18% 10%;
+    --card-foreground: 40 15% 90%;
+
+    --popover: 25 18% 8%;
+    --popover-foreground: 40 15% 90%;
+
+    /* Coffee Brown Primary */
+    --primary: 30 35% 65%;
+    --primary-foreground: 25 20% 6%;
+
+    --secondary: 25 15% 15%;
+    --secondary-foreground: 40 15% 85%;
+
+    --muted: 25 12% 18%;
+    --muted-foreground: 35 12% 55%;
+
+    --accent: 30 40% 45%;
+    --accent-foreground: 25 20% 6%;
+
+    /* Cyber Lime - Vibrant in Dark Mode */
+    --cyber-lime: 80 100% 55%;
+    --cyber-lime-foreground: 25 20% 6%;
+
+    --success: 80 100% 55%;
+    --success-foreground: 25 20% 6%;
+
+    --warning: 38 92% 55%;
+    --warning-foreground: 25 20% 6%;
+
+    --status-ready: 80 100% 55%;
+    --status-sent: 210 80% 60%;
+    --status-analyzing: 280 70% 65%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 25 15% 18%;
+    --input: 25 15% 18%;
+    --ring: 80 100% 55%;
+
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.25);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.35), 0 2px 4px -2px hsl(0 0% 0% / 0.25);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 0 35px hsl(80 100% 55% / 0.35);
+    --shadow-glow-strong: 0 0 50px hsl(80 100% 55% / 0.5), 0 0 100px hsl(80 100% 55% / 0.3);
+
+    --sidebar-background: 25 18% 8%;
+    --sidebar-foreground: 40 15% 85%;
+    --sidebar-primary: 30 35% 65%;
+    --sidebar-primary-foreground: 25 20% 6%;
+    --sidebar-accent: 25 15% 14%;
+    --sidebar-accent-foreground: 40 15% 85%;
+    --sidebar-border: 25 15% 16%;
+    --sidebar-ring: 80 100% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* Stat Card Styles */
+  .stat-card {
+    @apply relative overflow-hidden rounded-xl bg-card p-6 transition-all duration-300;
+    box-shadow: var(--shadow-md);
+  }
+
+  .stat-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+
+  .stat-card-icon {
+    @apply flex h-12 w-12 items-center justify-center rounded-lg;
+  }
+
+  /* Status Badge Styles - New System */
+  .badge-ready {
+    background-color: hsl(var(--cyber-lime) / 0.12);
+    color: hsl(var(--cyber-lime) / 0.9);
+    border: 1px solid hsl(var(--cyber-lime) / 0.25);
+    @apply rounded-full;
+  }
+
+  .badge-sent {
+    @apply bg-[hsl(210,80%,55%)]/15 text-[hsl(210,80%,55%)] border border-[hsl(210,80%,55%)]/25;
+  }
+
+  .badge-analyzing {
+    @apply bg-[hsl(280,70%,60%)]/15 text-[hsl(280,70%,60%)] border border-[hsl(280,70%,60%)]/25;
+  }
+
+  /* Legacy badges for compatibility */
+  .badge-pending {
+    @apply badge-ready;
+  }
+
+  .badge-inprocess {
+    @apply bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30;
+  }
+
+  .badge-rejected {
+    @apply bg-red-500/15 text-red-800/90 dark:bg-red-950/30 dark:text-red-200/90 border border-red-500/25 dark:border-red-800/30;
+  }
+
+  .badge-responded {
+    @apply badge-sent;
+  }
+
+  .badge-demo {
+    @apply badge-analyzing;
+  }
+
+  /* Activity Timeline */
+  .activity-item {
+    @apply relative pl-8 pb-6;
+  }
+
+  .activity-item::before {
+    content: '';
+    @apply absolute left-3 top-3 h-full w-px bg-border;
+  }
+
+  .activity-item:last-child::before {
+    @apply hidden;
+  }
+
+  .activity-dot {
+    @apply absolute left-0 top-1 h-6 w-6 rounded-full border-2 border-background flex items-center justify-center;
+  }
+
+  .bot-live-pulse {
+    position: relative;
+  }
+
+  .bot-live-pulse::after {
+    content: '';
+    position: fixed;
+    inset: 6px;
+    border-radius: 16px;
+    pointer-events: none;
+    border: 1px solid hsl(var(--cyber-lime) / 0.12);
+    box-shadow: 0 0 16px hsl(var(--cyber-lime) / 0.12);
+    animation: botPulse 2.8s ease-in-out infinite;
+  }
+
+  /* Table Styles - minimal */
+  .lead-table {
+    @apply w-full border-separate border-spacing-0;
+  }
+
+  .lead-table th {
+    @apply text-left text-xs font-medium text-muted-foreground;
+  }
+
+  .lead-table td {
+    @apply text-sm border-b border-border/50;
+  }
+
+  .lead-table tbody tr {
+    @apply transition-colors cursor-pointer;
+  }
+
+  .lead-table tbody tr.selected {
+    @apply bg-muted/60;
+  }
+
+  /* Glassmorphism Effect */
+  .glass {
+    @apply backdrop-blur-md bg-card/80;
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+
+  /* Cyber Lime Gradient */
+  .gradient-cyber {
+    @apply bg-gradient-to-r from-cyber-lime to-[hsl(90,100%,45%)] bg-clip-text text-transparent;
+  }
+
+  /* Chart Container */
+  .chart-container {
+    @apply rounded-xl bg-card p-6;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Side Panel Styles */
+  .side-panel {
+    @apply fixed right-0 top-0 h-full w-full sm:w-[480px] bg-card border-l border-border z-50;
+    box-shadow: -10px 0 40px hsl(0 0% 0% / 0.2);
+  }
+
+  /* Glowing Button */
+  .btn-glow {
+    @apply relative overflow-hidden;
+    box-shadow: var(--shadow-glow);
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+  }
+
+  .btn-glow:hover {
+    box-shadow: var(--shadow-glow-strong);
+    transform: translateY(-1px);
+  }
+
+  .btn-glow::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg, hsl(var(--cyber-lime)), hsl(90 100% 45%), hsl(var(--cyber-lime)));
+    background-size: 200% 200%;
+    border-radius: inherit;
+    z-index: -1;
+    animation: glow-pulse 2s ease-in-out infinite;
+    opacity: 0.5;
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      background-position: 0% 50%;
+      opacity: 0.4;
+    }
+    50% {
+      background-position: 100% 50%;
+      opacity: 0.7;
+    }
+  }
+
+  /* Gauge Styles */
+  .gauge-container {
+    @apply relative inline-flex items-center justify-center;
+  }
+
+  .gauge-bg {
+    stroke: hsl(var(--muted));
+  }
+
+  .gauge-fill {
+    stroke: hsl(var(--cyber-lime));
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transition: stroke-dashoffset 0.5s ease;
+  }
+
+  /* Scrollbar Styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/30;
+  }
+}
+
+@layer utilities {
+  /* Animation Utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes botPulse {
+    0% {
+      box-shadow: 0 0 10px hsl(var(--cyber-lime) / 0.08);
+      border-color: hsl(var(--cyber-lime) / 0.08);
+    }
+    50% {
+      box-shadow: 0 0 20px hsl(var(--cyber-lime) / 0.18);
+      border-color: hsl(var(--cyber-lime) / 0.18);
+    }
+    100% {
+      box-shadow: 0 0 10px hsl(var(--cyber-lime) / 0.08);
+      border-color: hsl(var(--cyber-lime) / 0.08);
+    }
+  }
+
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .delay-400 {
+    animation-delay: 400ms;
+  }
+}
