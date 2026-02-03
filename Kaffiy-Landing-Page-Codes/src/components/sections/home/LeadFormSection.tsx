@@ -16,15 +16,7 @@ export function LeadFormSection() {
     e.preventDefault();
     setIsLoading(true);
 
-    const endpoint = import.meta.env.VITE_LEAD_ENDPOINT;
-    if (!endpoint) {
-      setIsLoading(false);
-      toast({
-        title: t("leadForm.errorTitle"),
-        description: t("leadForm.errorDesc"),
-      });
-      return;
-    }
+    const endpoint = import.meta.env.VITE_LEAD_ENDPOINT || "/api/lead";
 
     try {
       const formData = new FormData(e.currentTarget);
@@ -65,112 +57,100 @@ export function LeadFormSection() {
   };
 
   return (
-    <section 
-      id="lead-form" 
+    <section
+      id="lead-form"
       className="section-padding relative overflow-hidden"
-      style={{
-        background: '#F8FAFC',
-        transition: 'background 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-      }}
     >
-      {/* Subtle theme-colored gradient */}
-      <div 
+      {/* Background decoration */}
+      <div
         className="absolute inset-0 pointer-events-none z-0"
         style={{
-          background: `radial-gradient(ellipse at 50% 50%, hsl(var(--primary) / 0.07) 0%, transparent 60%)`,
-          filter: 'blur(100px)',
-          transition: 'background 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+          background: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%)',
         }}
       />
-      
+
       <div className="section-container relative z-10">
         <div className="max-w-xl mx-auto">
-          <div className="text-center mb-6 sm:mb-8 md:mb-10">
-            <h2 
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-4 sm:mb-6 tracking-tight text-slate-900"
+          <div className="text-center mb-10">
+            <h2
+              className="text-3xl sm:text-4xl md:text-5xl font-heading font-bold mb-4 tracking-tight text-slate-900 leading-tight"
             >
               {t("leadForm.title")}
             </h2>
+            <p className="text-slate-500 max-w-md mx-auto">
+              {t("leadForm.socialProof")}
+            </p>
           </div>
 
           {/* Form Card */}
-          <div 
-            className="rounded-2xl sm:rounded-3xl border p-5 sm:p-6 md:p-8 animate-fade-in-up backdrop-blur-sm"
+          <div
+            className="rounded-3xl border border-white/40 p-6 sm:p-10 shadow-2xl backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 relative overflow-hidden"
             style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              borderColor: 'rgba(148, 163, 184, 0.5)',
-              borderWidth: '1px',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.1)',
             }}
           >
-            {/* Social Proof Badge - Top of Form */}
-            <div 
-              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-white rounded-full mb-4 sm:mb-6 w-full justify-center shadow-lg text-xs sm:text-sm"
-              style={{
-                background: `linear-gradient(to right, hsl(var(--primary)), hsl(var(--primary) / 0.8))`,
-              }}
-            >
-              <Users className="w-5 h-5" />
-              <span className="font-semibold">
-                {t("leadForm.socialProof")}
-              </span>
-            </div>
-            
+            {/* Soft tint gradient inside card */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
+
             {isSubmitted ? (
-              <div className="text-center py-8">
-                <div 
-                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                  style={{ backgroundColor: 'hsl(var(--primary))' }}
+              <div className="text-center py-12 relative z-10">
+                <div
+                  className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 animate-fade-in-up"
                 >
-                  <CheckCircle2 className="w-8 h-8 text-white" />
+                  <CheckCircle2 className="w-10 h-10" />
                 </div>
-                <h3 className="font-heading font-semibold text-xl text-foreground mb-2">
+                <h3 className="font-heading font-bold text-2xl text-slate-900 dark:text-white mb-3">
                   {t("leadForm.success")}
                 </h3>
+                <p className="text-slate-500 dark:text-slate-400">
+                  En kısa sürede sizinle iletişime geçeceğiz.
+                </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-foreground font-medium">
+                  <Label htmlFor="name" className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-1">
                     {t("leadForm.name")}
                   </Label>
                   <Input
                     id="name"
                     name="name"
                     required
-                    className="h-12 rounded-2xl border-[#1E293B]/20 bg-background focus:ring-primary focus:border-primary"
-                    placeholder="Ahmet Yılmaz"
+                    className="h-14 rounded-2xl border-transparent bg-white/70 dark:bg-slate-800/50 shadow-sm focus:bg-white dark:focus:bg-slate-800 transition-all border outline-none ring-0 focus:ring-2 focus:ring-primary/20 px-5 text-base"
+                    placeholder="Adınız Soyadınız"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="cafeName" className="text-foreground font-medium">
-                    {t("leadForm.cafeName")}
-                  </Label>
-                  <Input
-                    id="cafeName"
-                    name="cafeName"
-                    required
-                    className="h-12 rounded-2xl border-[#1E293B]/20 bg-background focus:ring-primary focus:border-primary"
-                    placeholder="Artisan Café"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="cafeName" className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-1">
+                      {t("leadForm.cafeName")}
+                    </Label>
+                    <Input
+                      id="cafeName"
+                      name="cafeName"
+                      required
+                      className="h-14 rounded-2xl border-transparent bg-white/70 dark:bg-slate-800/50 shadow-sm focus:bg-white dark:focus:bg-slate-800 transition-all border outline-none ring-0 focus:ring-2 focus:ring-primary/20 px-5 text-base"
+                      placeholder="Örn: Kaffiy Coffee"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="city" className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-1">
+                      {t("leadForm.city")}
+                    </Label>
+                    <Input
+                      id="city"
+                      name="city"
+                      required
+                      className="h-14 rounded-2xl border-transparent bg-white/70 dark:bg-slate-800/50 shadow-sm focus:bg-white dark:focus:bg-slate-800 transition-all border outline-none ring-0 focus:ring-2 focus:ring-primary/20 px-5 text-base"
+                      placeholder="Örn: İstanbul"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="city" className="text-foreground font-medium">
-                    {t("leadForm.city")}
-                  </Label>
-                  <Input
-                    id="city"
-                    name="city"
-                    required
-                    className="h-12 rounded-2xl border-[#1E293B]/20 bg-background focus:ring-primary focus:border-primary"
-                    placeholder="İstanbul"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-foreground font-medium">
+                  <Label htmlFor="email" className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-1">
                     {t("leadForm.email")}
                   </Label>
                   <Input
@@ -178,32 +158,40 @@ export function LeadFormSection() {
                     name="email"
                     type="email"
                     required
-                    className="h-12 rounded-2xl border-[#1E293B]/20 bg-background focus:ring-primary focus:border-primary"
+                    className="h-14 rounded-2xl border-transparent bg-white/70 dark:bg-slate-800/50 shadow-sm focus:bg-white dark:focus:bg-slate-800 transition-all border outline-none ring-0 focus:ring-2 focus:ring-primary/20 px-5 text-base"
                     placeholder={t("leadForm.emailPlaceholder")}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="contact" className="text-foreground font-medium">
+                  <Label htmlFor="contact" className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-1">
                     {t("leadForm.contact")}
                   </Label>
                   <Input
                     id="contact"
                     name="contact"
                     required
-                    className="h-12 rounded-2xl border-[#1E293B]/20 bg-background focus:ring-primary focus:border-primary"
-                    placeholder="0532 xxx xx xx"
+                    className="h-14 rounded-2xl border-transparent bg-white/70 dark:bg-slate-800/50 shadow-sm focus:bg-white dark:focus:bg-slate-800 transition-all border outline-none ring-0 focus:ring-2 focus:ring-primary/20 px-5 text-base"
+                    placeholder="05XX XXX XX XX"
                   />
                 </div>
 
-                <Button 
-                  type="submit" 
-                  size="lg"
+                <Button
+                  type="submit"
                   disabled={isLoading}
-                  className="w-full h-14 bg-primary text-primary-foreground hover:opacity-90 rounded-2xl text-base font-semibold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  className="w-full h-14 bg-gradient-to-r from-primary to-indigo-600 hover:from-primary/90 hover:to-indigo-600/90 text-white rounded-2xl text-lg font-bold shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 mt-4"
                 >
-                  {isLoading ? "..." : t("leadForm.submit")}
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Gönderiliyor...
+                    </span>
+                  ) : t("leadForm.submit")}
                 </Button>
+
+                <p className="text-xs text-center text-slate-400 mt-4">
+                  * Bilgileriniz Kaffiy güvencesinde saklanır ve asla 3. taraflarla paylaşılmaz.
+                </p>
               </form>
             )}
           </div>

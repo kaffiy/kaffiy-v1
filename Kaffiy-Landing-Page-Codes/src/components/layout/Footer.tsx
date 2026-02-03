@@ -7,7 +7,7 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer 
+    <footer
       className="text-slate-800"
       style={{
         background: 'linear-gradient(180deg, #1E293B 0%, #0f172a 100%)',
@@ -15,7 +15,7 @@ export function Footer() {
       }}
     >
       {/* Mission Statement - Top Section - 2 Column Layout */}
-      <div 
+      <div
         className="py-10 sm:py-14 bg-[#FAFBFC] dark:bg-slate-900/70 text-slate-800 dark:text-slate-200 border-b border-slate-200/60 dark:border-slate-700/50"
         style={{ transition: 'background-color 0.5s, color 0.5s, border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
       >
@@ -23,27 +23,27 @@ export function Footer() {
           <div className="grid md:grid-cols-2 gap-6 md:gap-8 lg:gap-12">
             {/* Left Column - Built By Kaffiy */}
             <div className="text-center md:text-left">
-              <h2 
+              <h2
                 className="text-2xl md:text-3xl font-heading font-bold mb-4 tracking-tight text-slate-900"
               >
                 {language === "tr" ? "Kaffiy tarafından geliştirildi" : "Developed by Kaffiy"}
               </h2>
-              <p 
+              <p
                 className="text-base leading-relaxed mb-4 text-slate-700 dark:text-slate-300"
               >
-                {language === "tr" 
+                {language === "tr"
                   ? "Kaffiy, çevrimdışı işletmeler için basit, insan odaklı sistemler geliştiren otomasyon odaklı bir şirkettir."
                   : "Kaffiy is an automation-focused company that develops simple, human-centered systems for offline businesses."}
               </p>
-              <p 
+              <p
                 className="text-base leading-relaxed mb-6 text-slate-700 dark:text-slate-300"
               >
                 {language === "tr"
                   ? "Teknolojinin karmaşıklık eklemek yerine sürtünmeyi azaltması gerektiğine inanıyoruz."
                   : "We believe technology should reduce friction instead of adding complexity."}
               </p>
-              <Link 
-                to="/about" 
+              <Link
+                to="/about"
                 className="inline-flex items-center font-semibold transition-all group"
                 style={{
                   color: 'hsl(var(--primary))',
@@ -61,18 +61,18 @@ export function Footer() {
 
             {/* Right Column - Mission */}
             <div className="text-center md:text-left">
-              <h2 
+              <h2
                 className="text-2xl md:text-3xl font-heading font-bold mb-4 tracking-tight text-slate-900 dark:text-slate-100"
               >
                 {t("footer.missionTitle")}
               </h2>
-              <p 
+              <p
                 className="text-base leading-relaxed mb-6 text-slate-700 dark:text-slate-300"
               >
                 {t("footer.missionText")}
               </p>
-              <Link 
-                to="/about" 
+              <Link
+                to="/about"
                 className="inline-flex items-center font-semibold transition-all group"
                 style={{
                   color: 'hsl(var(--primary))',
@@ -114,26 +114,26 @@ export function Footer() {
                 {t("footer.quickLinks")}
               </h4>
               <div className="flex flex-col gap-1">
-                <Link 
-                  to="/" 
+                <Link
+                  to="/"
                   className="text-slate-300 hover:text-white transition-colors text-sm py-2 -my-1"
                 >
                   {t("nav.home")}
                 </Link>
-                <Link 
-                  to="/#how-it-works" 
+                <Link
+                  to="/#how-it-works"
                   className="text-slate-300 hover:text-white transition-colors text-sm py-2 -my-1"
                 >
                   {t("nav.howItWorks")}
                 </Link>
-                <Link 
-                  to="/about" 
+                <Link
+                  to="/about"
                   className="text-slate-300 hover:text-white transition-colors text-sm py-2 -my-1"
                 >
                   {t("nav.about")}
                 </Link>
-                <Link 
-                  to="/contact" 
+                <Link
+                  to="/contact"
                   className="text-slate-300 hover:text-white transition-colors text-sm py-2 -my-1"
                 >
                   {t("footer.contact")}
@@ -147,21 +147,21 @@ export function Footer() {
                 {t("footer.legal")}
               </h4>
               <div className="flex flex-col gap-1">
-                <Link 
-                  to="/privacy" 
+                <Link
+                  to="/privacy"
                   className="text-slate-300 hover:text-white transition-colors text-sm py-2 -my-1"
                 >
                   {t("footer.privacy")}
                 </Link>
-                <a 
-                  href="mailto:team.kaffiy@gmail.com" 
+                <a
+                  href="mailto:team.kaffiy@gmail.com"
                   className="text-slate-300 hover:text-white transition-colors text-sm flex items-center gap-2 py-2 -my-1"
                 >
                   <Mail className="w-4 h-4 shrink-0" />
                   {t("footer.email")}
                 </a>
-                <a 
-                  href="mailto:team.kaffiy@gmail.com" 
+                <a
+                  href="mailto:team.kaffiy@gmail.com"
                   className="text-slate-300 hover:text-white transition-colors text-sm py-2 -my-1 break-all"
                 >
                   team.kaffiy@gmail.com
@@ -181,27 +181,24 @@ export function Footer() {
                 {t("footer.social")}
               </h4>
               <div className="flex gap-3 mb-6">
-                <a 
-                  href="#" 
-                  className="w-11 h-11 rounded-xl bg-white/[0.08] hover:bg-white/18 flex items-center justify-center transition-all duration-300 hover:scale-105 border border-white/[0.06] hover:border-white/10"
-                  aria-label="Instagram"
+                <div
+                  className="w-11 h-11 rounded-xl bg-white/[0.04] flex items-center justify-center border border-white/[0.04] opacity-30 cursor-not-allowed"
+                  aria-label="Instagram (Coming Soon)"
                 >
-                  <Instagram className="w-5 h-5 text-slate-300" />
-                </a>
-                <a 
-                  href="#" 
-                  className="w-11 h-11 rounded-xl bg-white/[0.08] hover:bg-white/18 flex items-center justify-center transition-all duration-300 hover:scale-105 border border-white/[0.06] hover:border-white/10"
-                  aria-label="Twitter"
+                  <Instagram className="w-5 h-5 text-slate-400" />
+                </div>
+                <div
+                  className="w-11 h-11 rounded-xl bg-white/[0.04] flex items-center justify-center border border-white/[0.04] opacity-30 cursor-not-allowed"
+                  aria-label="Twitter (Coming Soon)"
                 >
-                  <Twitter className="w-5 h-5 text-slate-300" />
-                </a>
-                <a 
-                  href="#" 
-                  className="w-11 h-11 rounded-xl bg-white/[0.08] hover:bg-white/18 flex items-center justify-center transition-all duration-300 hover:scale-105 border border-white/[0.06] hover:border-white/10"
-                  aria-label="LinkedIn"
+                  <Twitter className="w-5 h-5 text-slate-400" />
+                </div>
+                <div
+                  className="w-11 h-11 rounded-xl bg-white/[0.04] flex items-center justify-center border border-white/[0.04] opacity-30 cursor-not-allowed"
+                  aria-label="LinkedIn (Coming Soon)"
                 >
-                  <Linkedin className="w-5 h-5 text-slate-300" />
-                </a>
+                  <Linkedin className="w-5 h-5 text-slate-400" />
+                </div>
               </div>
               <div className="space-y-2">
                 <p className="text-slate-400 text-xs">
