@@ -7,7 +7,6 @@ import { PremiumProvider } from "@/contexts/PremiumContext";
 import { DashboardCardsProvider } from "@/contexts/DashboardCardsContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { CompanyProvider } from "@/contexts/CompanyContext";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import Login from "./pages/Login";
 import { Navigate, Outlet } from "react-router-dom";
@@ -60,39 +59,38 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <CompanyProvider>
-          <PremiumProvider>
-            <DashboardCardsProvider>
-              <SidebarProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
-                  <BrowserRouter>
-                    <Routes>
-                      {/* Public Routes (Login) */}
-                      <Route element={<PublicRoute />}>
-                        <Route path="/login" element={<Login />} />
-                      </Route>
+        <PremiumProvider>
+          <DashboardCardsProvider>
+            <SidebarProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Routes>
+                    {/* Public Routes (Login) */}
+                    <Route element={<PublicRoute />}>
+                      <Route path="/login" element={<Login />} />
+                    </Route>
 
-                      {/* Protected Routes (Dashboard) */}
-                      <Route element={<ProtectedRoute />}>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/customers" element={<Customers />} />
-                        <Route path="/campaigns" element={<Campaigns />} />
-                        <Route path="/team" element={<Team />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/profile" element={<Profile />} />
-                      </Route>
+                    {/* Protected Routes (Dashboard) */}
+                    <Route element={<ProtectedRoute />}>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/customers" element={<Customers />} />
+                      <Route path="/campaigns" element={<Campaigns />} />
+                      <Route path="/team" element={<Team />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/admin/kaffiy" element={<KaffiyAdmin />} />
+                    </Route>
 
-                      {/* Catch all - Redirect to login or dashboard depending on auth */}
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </BrowserRouter>
-                </TooltipProvider>
-              </SidebarProvider>
-            </DashboardCardsProvider>
-          </PremiumProvider>
-        </CompanyProvider>
+                    {/* Catch all - Redirect to login or dashboard depending on auth */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </BrowserRouter>
+              </TooltipProvider>
+            </SidebarProvider>
+          </DashboardCardsProvider>
+        </PremiumProvider>
       </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>
