@@ -1,4 +1,4 @@
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useCafe } from "@/contexts/CafeContext";
 
@@ -25,7 +25,11 @@ const Index = () => {
     );
   }
 
-  if (error || !searchParams.get("cafe")) {
+  if (!searchParams.get("cafe")) {
+    return <Navigate to="/home" replace />;
+  }
+
+  if (error) {
     return (
       <div className="mobile-container min-h-screen flex items-center justify-center bg-background px-6">
         <div className="text-center p-8 rounded-3xl bg-secondary/30 backdrop-blur-sm border border-border">
