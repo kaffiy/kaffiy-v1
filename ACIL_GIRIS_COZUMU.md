@@ -28,21 +28,18 @@
 ```sql
 -- Admin kullanıcısını ekle
 INSERT INTO worker_tb (
-  id, email, name, role, company_id, created_at, updated_at
+  id, company_id, shop_id, first_name, last_name, email, 
+  role, permissions, is_active, created_at, updated_at
 )
 SELECT 
-  id, 
-  'gokceoguz27@gmail.com', 
-  'Gökçe Oğuz', 
-  'admin', 
-  NULL, 
-  NOW(), 
-  NOW()
+  id, NULL, NULL, 'Gökçe', 'Oğuz', 'gokceoguz27@gmail.com',
+  'brand_admin', '{}', true, NOW(), NOW()
 FROM auth.users
 WHERE email = 'gokceoguz27@gmail.com'
 ON CONFLICT (id) DO UPDATE SET
-  role = 'admin',
-  company_id = NULL;
+  role = 'brand_admin',
+  company_id = NULL,
+  is_active = true;
 ```
 
 4. **"Run"** butonuna tıkla (veya Ctrl+Enter)
@@ -55,8 +52,9 @@ SELECT * FROM worker_tb WHERE email = 'gokceoguz27@gmail.com';
 ```
 
 Sonuç:
-- ✅ `role` = `'admin'` olmalı
+- ✅ `role` = `'brand_admin'` olmalı
 - ✅ `company_id` = `NULL` olmalı
+- ✅ `is_active` = `true` olmalı
 
 ### 5️⃣ Giriş Yap
 1. http://localhost:5173 adresini aç
@@ -87,7 +85,7 @@ WHERE email = 'gokceoguz27@gmail.com';
 ### "No company associated" hatası:
 ```sql
 UPDATE worker_tb 
-SET role = 'admin', company_id = NULL 
+SET role = 'brand_admin', company_id = NULL, is_active = true
 WHERE email = 'gokceoguz27@gmail.com';
 ```
 
