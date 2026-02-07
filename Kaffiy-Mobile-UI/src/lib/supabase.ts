@@ -9,12 +9,8 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 // CONFIGURATION
 // ========================================
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please check your .env file.');
-}
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ivuhmjtnnhieguiblnbr.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2dWhtanRubmhpZWd1aWJsbmJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3MzY4OTcsImV4cCI6MjA4NDMxMjg5N30.SDOsi9-uSVtGt7faeu7fSZsZTXzk4mHSA9R0ky9mSfg';
 
 // ========================================
 // CLIENT CREATION
