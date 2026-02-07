@@ -26,7 +26,7 @@ const Index = () => {
   }
 
   if (!searchParams.get("cafe")) {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/qr" replace />;
   }
 
   if (error) {
