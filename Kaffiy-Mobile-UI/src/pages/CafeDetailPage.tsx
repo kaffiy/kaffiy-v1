@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Flame, MapPin, Instagram, Phone, Globe, Gift, Percent, Coffee, Bell, BellOff, Trophy, TrendingUp, Sparkles, UserMinus, UserPlus } from "lucide-react";
+import { ArrowLeft, Flame, MapPin, Instagram, Phone, Globe, Gift, Percent, Coffee, Bell, BellOff, Trophy, TrendingUp, Sparkles, UserMinus, UserPlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProgressBar from "@/components/ProgressBar";
 import BottomNav from "@/components/BottomNav";
@@ -26,97 +26,51 @@ import {
   CarouselNext,
   type CarouselApi,
 } from "@/components/ui/carousel";
-// Mock data for all cafes
-const allCafesData: Record<number, any> = {
-  1: {
-    id: 1,
-    name: "Halic Kahve",
-    visits: 2,
-    totalForReward: 5,
-    logoType: "halic",
-    logoEmoji: "☕",
-    isLoyalCustomer: true,
-    address: "Bağdat Caddesi No:123, Kadıköy/İstanbul",
-    phone: "+90 216 123 45 67",
-    instagram: "@kaffiycafe",
-    website: "www.kaffiy.com",
-    campaigns: [
-      {
-        id: 1,
-        title: "Doğum Günü Kampanyası",
-        description: "Doğum gününüzde 1 dilim pasta hediye.",
-        highlight: "Doğum gününde geçerli",
-        details: "Doğum tarihinizi profilinize ekleyin ve doğum gününüzde 1 dilim pasta hediyenizi alın.",
-        icon: "gift",
-        color: "bg-rose-500/10 text-rose-500",
-      },
-      {
-        id: 2,
-        title: "Kahve Yanında Tatlı %25 İndirim",
-        description: "Her kahve alımında yanında tatlı %25 indirimli.",
-        highlight: "Her zaman geçerli",
-        details: "Kahve aldığınızda seçtiğiniz tatlıda %25 indirim uygulanır.",
-        icon: "percent",
-        color: "bg-amber-500/10 text-amber-500",
-      },
-    ],
-  },
-  2: {
-    id: 2,
-    name: "Brew House",
-    visits: 3,
-    totalForReward: 5,
-    logoType: undefined,
-    logoEmoji: "🫖",
-    isLoyalCustomer: false,
-    address: "İstiklal Caddesi No:456, Beyoğlu/İstanbul",
-    phone: "+90 212 234 56 78",
-    instagram: "@brewhouse",
-    website: "www.brewhouse.com",
-    campaigns: [
-      {
-        id: 1,
-        title: "Doğum Günü Kampanyası",
-        description: "Doğum gününüzde 1 dilim pasta hediye.",
-        highlight: "Doğum gününde geçerli",
-        details: "Doğum tarihinizi profilinize ekleyin ve doğum gününüzde 1 dilim pasta hediyenizi alın.",
-        icon: "gift",
-        color: "bg-rose-500/10 text-rose-500",
-      },
-      {
-        id: 2,
-        title: "Kahve Yanında Tatlı %25 İndirim",
-        description: "Her kahve alımında yanında tatlı %25 indirimli.",
-        highlight: "Her zaman geçerli",
-        details: "Kahve aldığınızda seçtiğiniz tatlıda %25 indirim uygulanır.",
-        icon: "percent",
-        color: "bg-amber-500/10 text-amber-500",
-      },
-    ],
-  },
-};
+import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/lib/supabase";
 
-const getCampaignIcon = (iconType: string) => {
-  switch (iconType) {
-    case "gift":
+const REWARD_GOAL = 5;
+
+const getCampaignIcon = (type: string) => {
+  switch (type) {
+    case "birthday":
       return Gift;
-    case "percent":
+    case "discount":
       return Percent;
-    case "coffee":
+    case "reward":
       return Coffee;
     default:
       return Gift;
   }
 };
 
+const getCampaignColor = (type: string) => {
+  switch (type) {
+    case "birthday":
+      return "bg-rose-500/10 text-rose-500";
+    case "discount":
+      return "bg-amber-500/10 text-amber-500";
+    case "reward":
+      return "bg-emerald-500/10 text-emerald-500";
+    case "event":
+      return "bg-blue-500/10 text-blue-500";
+    default:
+      return "bg-primary/10 text-primary";
+  }
+};
+
 const CafeDetailPage = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
-  const cafeId = id ? parseInt(id) : 1;
-  
-  // Get cafe data based on ID, fallback to cafe 1 if not found
-  const mockCafeData = allCafesData[cafeId] || allCafesData[1];
-  
+  const { id: slug } = useParams();
+  const { user, loyaltyPoints } = useUser();
+
+  // DB state
+  const [cafe, setCafe] = useState<any>(null);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loyalty, setLoyalty] = useState<any>(null);
+  const [isPageLoading, setIsPageLoading] = useState(true);
+
+  // UI state
   const [activeTab, setActiveTab] = useState<"qr" | "profile">("qr");
   const [selectedCampaignIndex, setSelectedCampaignIndex] = useState<number | null>(null);
   const [showCafeInfo, setShowCafeInfo] = useState(false);
@@ -125,39 +79,100 @@ const CafeDetailPage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [modalCarouselApi, setModalCarouselApi] = useState<CarouselApi>();
   const [modalCurrentSlide, setModalCurrentSlide] = useState(0);
-  const [isFollowing, setIsFollowing] = useState(() => {
-    // Load from localStorage
-    const stored = localStorage.getItem(`following-${mockCafeData.id}`);
-    return stored === "true";
-  });
-  const [isMember, setIsMember] = useState(() => {
-    // Load from localStorage
-    const stored = localStorage.getItem(`member-${mockCafeData.id}`);
-    return stored === "true";
-  });
+  const [isFollowing, setIsFollowing] = useState(false);
   const [showLoyaltyStats, setShowLoyaltyStats] = useState(false);
-  const [selectedCampaignIds, setSelectedCampaignIds] = useState<number[]>(() => {
-    // Load from localStorage
-    const stored = localStorage.getItem(`selected-campaigns-${mockCafeData.id}`);
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch {
-        // Legacy support: if it's a single number, convert to array
-        const num = parseInt(stored);
-        return isNaN(num) ? [] : [num];
-      }
-    }
-    return [];
-  });
+  const [selectedCampaignIds, setSelectedCampaignIds] = useState<string[]>([]);
 
-  const remainingForReward = mockCafeData.totalForReward - mockCafeData.visits;
-  const selectedCampaign = selectedCampaignIndex !== null ? mockCafeData.campaigns[selectedCampaignIndex] : null;
+  // Fetch cafe data from DB
+  useEffect(() => {
+    if (!slug) return;
+
+    const fetchCafe = async () => {
+      setIsPageLoading(true);
+
+      // 1. Fetch cafe info from company_tb
+      const { data: cafeData, error: cafeError } = await supabase
+        .from("company_tb")
+        .select("id, name, slug, logo_url, description, phone, email, website, address")
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .single();
+
+      if (cafeError || !cafeData) {
+        console.error("Cafe fetch error:", cafeError);
+        setIsPageLoading(false);
+        return;
+      }
+
+      setCafe(cafeData);
+
+      // 2. Fetch campaigns for this cafe
+      const { data: campaignData } = await supabase
+        .from("campaign_tb")
+        .select("id, title, description, type, image_url, reward_points, discount_percentage, start_date, end_date, status")
+        .eq("company_id", cafeData.id)
+        .eq("is_active", true)
+        .eq("status", "active");
+
+      setCampaigns(campaignData || []);
+
+      // 3. Get loyalty for this cafe from context or DB
+      if (user) {
+        const lp = loyaltyPoints.find((l) => l.company_id === cafeData.id);
+        if (lp) {
+          setLoyalty(lp);
+        } else {
+          // Fetch directly
+          const { data: loyaltyData } = await supabase
+            .from("royalty_tb")
+            .select("points, level, visits_count, last_activity")
+            .eq("user_id", user.id)
+            .eq("company_id", cafeData.id)
+            .maybeSingle();
+
+          if (loyaltyData) {
+            setLoyalty(loyaltyData);
+          }
+        }
+
+        // 4. Check follow/subscribe status
+        const { data: subData } = await supabase
+          .from("user_subscribe_tb")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("company_id", cafeData.id)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        setIsFollowing(!!subData);
+      }
+
+      // Load selected campaigns from localStorage
+      const stored = localStorage.getItem(`selected-campaigns-${cafeData.id}`);
+      if (stored) {
+        try {
+          setSelectedCampaignIds(JSON.parse(stored));
+        } catch {
+          setSelectedCampaignIds([]);
+        }
+      }
+
+      setIsPageLoading(false);
+    };
+
+    fetchCafe();
+  }, [slug, user, loyaltyPoints]);
+
+  // Derived values
+  const visits = loyalty?.points || loyalty?.visits_count || 0;
+  const level = loyalty?.level || "explorer";
+  const isLoyalCustomer = level !== "explorer";
+  const remainingForReward = Math.max(REWARD_GOAL - visits, 0);
+  const isHalic = slug?.includes("halic");
 
   const onSelect = useCallback(() => {
     if (!carouselApi) return;
     setCurrentSlide(carouselApi.selectedScrollSnap());
-    // Don't auto-open modal, only update current slide for pagination dots
   }, [carouselApi]);
 
   const onModalSelect = useCallback(() => {
@@ -183,6 +198,50 @@ const CafeDetailPage = () => {
     };
   }, [modalCarouselApi, onModalSelect]);
 
+  if (isPageLoading) {
+    return (
+      <div className="mobile-container min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!cafe) {
+    return (
+      <div className="mobile-container min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <p className="text-muted-foreground">Kafe bulunamadı</p>
+        <Button variant="cafe" onClick={() => navigate("/home")}>Ana Sayfaya Dön</Button>
+      </div>
+    );
+  }
+
+  // Toggle follow/subscribe in DB
+  const handleToggleFollow = async () => {
+    if (!user || !cafe) return;
+    const newValue = !isFollowing;
+    setIsFollowing(newValue);
+
+    if (newValue) {
+      await supabase.from("user_subscribe_tb").upsert({
+        user_id: user.id,
+        company_id: cafe.id,
+        is_active: true,
+        subscription_date: new Date().toISOString(),
+      }, { onConflict: "user_id,company_id" });
+    } else {
+      await supabase
+        .from("user_subscribe_tb")
+        .update({ is_active: false })
+        .eq("user_id", user.id)
+        .eq("company_id", cafe.id);
+    }
+  };
+
+  const levelLabel = (l: string) => {
+    const map: Record<string, string> = { explorer: "Keşifçi", bronze: "Bronz", silver: "Gümüş", gold: "Altın", legend: "Efsane" };
+    return map[l] || l;
+  };
+
   return (
     <div className="mobile-container min-h-screen bg-background safe-area-top pb-24 flex flex-col">
       {/* Header */}
@@ -203,10 +262,12 @@ const CafeDetailPage = () => {
             className="flex items-center gap-2"
           >
             <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border-2 border-primary/20 overflow-hidden">
-              {mockCafeData.logoType === "halic" ? (
+              {isHalic ? (
                 <HalicKahveLogo size={40} />
+              ) : cafe.logo_url ? (
+                <img src={cafe.logo_url} alt={cafe.name} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-xl">{mockCafeData.logoEmoji}</span>
+                <span className="text-xl">☕</span>
               )}
             </div>
           </button>
@@ -215,11 +276,7 @@ const CafeDetailPage = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => {
-              const newValue = !isFollowing;
-              setIsFollowing(newValue);
-              localStorage.setItem(`following-${mockCafeData.id}`, String(newValue));
-            }}
+            onClick={handleToggleFollow}
             className={`w-9 h-9 rounded-full transition-all ${
               isFollowing 
                 ? "bg-primary text-primary-foreground hover:bg-primary/90" 
@@ -231,67 +288,43 @@ const CafeDetailPage = () => {
 
           {/* Follow/Membership Button */}
           <Button
-            variant={isMember ? "ghost" : "default"}
+            variant={loyalty ? "ghost" : "default"}
             size="icon"
             onClick={() => {
-              if (isMember) {
-                // Unfollow - navigate to home
-                setIsMember(false);
-                localStorage.removeItem(`member-${mockCafeData.id}`);
-                // Save cafe data for search
-                const unfollowedCafes = JSON.parse(localStorage.getItem("unfollowedCafes") || "[]");
-                if (!unfollowedCafes.find((c: any) => c.id === mockCafeData.id)) {
-                  unfollowedCafes.push({
-                    id: mockCafeData.id,
-                    name: mockCafeData.name,
-                    visits: mockCafeData.visits,
-                    totalForReward: mockCafeData.totalForReward,
-                    logoType: mockCafeData.logoType,
-                    logoEmoji: (mockCafeData as any).logoEmoji || "☕",
-                  });
-                  localStorage.setItem("unfollowedCafes", JSON.stringify(unfollowedCafes));
-                }
+              if (loyalty) {
                 navigate("/home");
-              } else {
-                // Follow
-                setIsMember(true);
-                localStorage.setItem(`member-${mockCafeData.id}`, "true");
-                // Remove from unfollowed list if exists
-                const unfollowedCafes = JSON.parse(localStorage.getItem("unfollowedCafes") || "[]");
-                const updated = unfollowedCafes.filter((c: any) => c.id !== mockCafeData.id);
-                localStorage.setItem("unfollowedCafes", JSON.stringify(updated));
               }
             }}
             className={`w-9 h-9 rounded-full transition-all ${
-              isMember 
+              loyalty 
                 ? "bg-secondary text-muted-foreground hover:text-foreground" 
                 : "bg-primary text-primary-foreground hover:bg-primary/90"
             }`}
           >
-            {isMember ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+            {loyalty ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
           </Button>
         </div>
       </header>
 
       {/* Cafe Name */}
       <section className="px-6 pb-2 text-center animate-fade-in">
-        <h1 className="text-xl font-bold text-foreground">{mockCafeData.name}</h1>
-        {mockCafeData.isLoyalCustomer && (
+        <h1 className="text-xl font-bold text-foreground">{cafe.name}</h1>
+        {isLoyalCustomer && (
           <button
             onClick={() => setShowLoyaltyStats(true)}
             className="flex items-center justify-center gap-1 bg-accent/10 text-accent px-2 py-1 rounded-full mt-2 w-fit mx-auto hover:bg-accent/20 transition-colors active:scale-95"
           >
             <Flame className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">Sadık</span>
+            <span className="text-xs font-medium">{levelLabel(level)}</span>
           </button>
         )}
       </section>
 
-      {/* Progress Section - Compact */}
+      {/* Progress Section */}
       <section className="px-6 py-3 animate-slide-up" style={{ animationDelay: "0.1s" }}>
         <ProgressBar 
-          current={mockCafeData.visits} 
-          total={mockCafeData.totalForReward} 
+          current={visits} 
+          total={REWARD_GOAL} 
           size="lg"
         />
       </section>
@@ -300,95 +333,97 @@ const CafeDetailPage = () => {
       <section className="px-6 py-8 flex-1 flex items-center justify-center animate-slide-up" style={{ animationDelay: "0.15s" }}>
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground">
-            Bedava kahvene <span className="text-accent">{remainingForReward} ziyaret</span> kaldı ☕
+            {remainingForReward > 0 ? (
+              <>Bedava kahvene <span className="text-accent">{remainingForReward} ziyaret</span> kaldı ☕</>
+            ) : (
+              <>🎉 Bedava kahveniz hazır! ☕</>
+            )}
           </h2>
         </div>
       </section>
 
-      {/* Campaigns Section - Visual Cards with Swipe */}
-      <section className="pb-6 mt-auto">
-        <h2 className="text-xs font-medium text-muted-foreground mb-3 px-6 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          Kampanyalar
-        </h2>
-        
-        <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
-          <Carousel
-            setApi={setCarouselApi}
-            opts={{
-              align: "start",
-              loop: false,
-            }}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-2 px-4">
-              {mockCafeData.campaigns.map((campaign, index) => {
-                const IconComponent = getCampaignIcon(campaign.icon);
-                const isSelected = selectedCampaignIds.includes(campaign.id);
-                return (
-                  <CarouselItem key={campaign.id} className="pl-2 basis-[85%]">
-                    <button
-                      onClick={() => setSelectedCampaignIndex(index)}
-                      className="w-full text-left p-4 rounded-2xl bg-card border transition-all active:scale-[0.98] hover:border-primary/30"
-                      style={{
-                        borderColor: isSelected ? "hsl(var(--primary))" : "hsl(var(--border))"
-                      }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${campaign.color}`}>
-                          <IconComponent className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-foreground text-sm line-clamp-2 mb-1">
-                            {campaign.title}
-                          </h3>
-                          {campaign.highlight && (
-                            <span className="text-xs text-accent font-medium">
-                              {campaign.highlight}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  </CarouselItem>
-                );
-              })}
-            </CarouselContent>
-          </Carousel>
+      {/* Campaigns Section */}
+      {campaigns.length > 0 && (
+        <section className="pb-6 mt-auto">
+          <h2 className="text-xs font-medium text-muted-foreground mb-3 px-6 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            Kampanyalar
+          </h2>
           
-          {/* Pagination dots */}
-          <div className="flex justify-center gap-1.5 mt-3">
-            {mockCafeData.campaigns.map((_, index) => (
-              <div
-                key={index}
-                className={`h-1.5 rounded-full transition-all ${
-                  currentSlide === index ? "bg-primary w-4" : "bg-secondary w-1.5"
-                }`}
-              />
-            ))}
+          <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
+            <Carousel
+              setApi={setCarouselApi}
+              opts={{ align: "start", loop: false }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-2 px-4">
+                {campaigns.map((campaign, index) => {
+                  const IconComponent = getCampaignIcon(campaign.type);
+                  const color = getCampaignColor(campaign.type);
+                  const isSelected = selectedCampaignIds.includes(campaign.id);
+                  return (
+                    <CarouselItem key={campaign.id} className="pl-2 basis-[85%]">
+                      <button
+                        onClick={() => setSelectedCampaignIndex(index)}
+                        className="w-full text-left p-4 rounded-2xl bg-card border transition-all active:scale-[0.98] hover:border-primary/30"
+                        style={{ borderColor: isSelected ? "hsl(var(--primary))" : "hsl(var(--border))" }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+                            <IconComponent className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-foreground text-sm line-clamp-2 mb-1">
+                              {campaign.title}
+                            </h3>
+                            {campaign.end_date && (
+                              <span className="text-xs text-accent font-medium">
+                                {new Date(campaign.end_date) > new Date() ? "Aktif" : "Süresi doldu"}
+                              </span>
+                            )}
+                            {!campaign.end_date && (
+                              <span className="text-xs text-accent font-medium">Her zaman geçerli</span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    </CarouselItem>
+                  );
+                })}
+              </CarouselContent>
+            </Carousel>
+            
+            {/* Pagination dots */}
+            <div className="flex justify-center gap-1.5 mt-3">
+              {campaigns.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-1.5 rounded-full transition-all ${
+                    currentSlide === index ? "bg-primary w-4" : "bg-secondary w-1.5"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Campaign Detail Modal with Swipe */}
+      {/* Campaign Detail Modal */}
       <Dialog open={selectedCampaignIndex !== null} onOpenChange={() => setSelectedCampaignIndex(null)}>
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md max-h-[85vh] p-0 overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto px-5 py-4">
             <Carousel
               setApi={setModalCarouselApi}
-              opts={{
-                align: "start",
-                startIndex: selectedCampaignIndex ?? 0,
-                dragFree: true,
-              }}
+              opts={{ align: "start", startIndex: selectedCampaignIndex ?? 0, dragFree: true }}
               className="w-full"
             >
               <CarouselContent>
-                {mockCafeData.campaigns.map((campaign) => {
-                  const IconComponent = getCampaignIcon(campaign.icon);
+                {campaigns.map((campaign) => {
+                  const IconComponent = getCampaignIcon(campaign.type);
+                  const color = getCampaignColor(campaign.type);
                   return (
                     <CarouselItem key={campaign.id} className="basis-full">
                       <div className="pt-2">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${campaign.color}`}>
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${color}`}>
                           <IconComponent className="w-7 h-7" />
                         </div>
                         
@@ -400,35 +435,41 @@ const CafeDetailPage = () => {
                         
                         <div className="space-y-4">
                           <p className="text-muted-foreground">{campaign.description}</p>
-                          {campaign.details && (
+                          {campaign.discount_percentage && (
                             <div className="bg-secondary/50 p-4 rounded-xl">
-                              <p className="text-sm text-foreground">{campaign.details}</p>
+                              <p className="text-sm text-foreground">%{campaign.discount_percentage} indirim</p>
                             </div>
                           )}
-                          {campaign.highlight && (
+                          {campaign.reward_points > 0 && (
+                            <div className="bg-secondary/50 p-4 rounded-xl">
+                              <p className="text-sm text-foreground">{campaign.reward_points} puan ödül</p>
+                            </div>
+                          )}
+                          {!campaign.end_date && (
                             <div className="flex items-center gap-2 text-accent font-medium">
                               <span>⏰</span>
-                              <span>{campaign.highlight}</span>
+                              <span>Her zaman geçerli</span>
                             </div>
                           )}
                           {selectedCampaignIndex !== null && (
                             <div className="pt-2 pb-3">
                               <Button
-                                variant={selectedCampaignIds.includes(mockCafeData.campaigns[modalCurrentSlide !== undefined ? modalCurrentSlide : selectedCampaignIndex].id) ? "cafe" : "default"}
+                                variant={selectedCampaignIds.includes(campaigns[modalCurrentSlide !== undefined ? modalCurrentSlide : selectedCampaignIndex]?.id) ? "cafe" : "default"}
                                 size="sm"
                                 className="h-8 px-3 text-xs w-full"
                                 onClick={() => {
                                   const currentIndex = modalCurrentSlide !== undefined ? modalCurrentSlide : selectedCampaignIndex;
-                                  const campaign = mockCafeData.campaigns[currentIndex];
-                                  const isSelected = selectedCampaignIds.includes(campaign.id);
+                                  const c = campaigns[currentIndex];
+                                  if (!c) return;
+                                  const isSelected = selectedCampaignIds.includes(c.id);
                                   const newSelectedIds = isSelected
-                                    ? selectedCampaignIds.filter(id => id !== campaign.id)
-                                    : [...selectedCampaignIds, campaign.id];
+                                    ? selectedCampaignIds.filter(cid => cid !== c.id)
+                                    : [...selectedCampaignIds, c.id];
                                   setSelectedCampaignIds(newSelectedIds);
-                                  localStorage.setItem(`selected-campaigns-${mockCafeData.id}`, JSON.stringify(newSelectedIds));
+                                  localStorage.setItem(`selected-campaigns-${cafe.id}`, JSON.stringify(newSelectedIds));
                                 }}
                               >
-                                {selectedCampaignIds.includes(mockCafeData.campaigns[modalCurrentSlide !== undefined ? modalCurrentSlide : selectedCampaignIndex].id) ? "✓ Seçili" : "Kampanyayı Kullan"}
+                                {selectedCampaignIds.includes(campaigns[modalCurrentSlide !== undefined ? modalCurrentSlide : selectedCampaignIndex]?.id) ? "✓ Seçili" : "Kampanyayı Kullan"}
                               </Button>
                             </div>
                           )}
@@ -465,15 +506,17 @@ const CafeDetailPage = () => {
             <DrawerHeader className="px-0">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
-                  {mockCafeData.logoType === "halic" ? (
+                  {isHalic ? (
                     <HalicKahveLogo size={56} />
+                  ) : cafe.logo_url ? (
+                    <img src={cafe.logo_url} alt={cafe.name} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-2xl">{mockCafeData.logoEmoji}</span>
+                    <span className="text-2xl">☕</span>
                   )}
                 </div>
                 <div>
-                  <DrawerTitle>{mockCafeData.name}</DrawerTitle>
-                  {mockCafeData.isLoyalCustomer && (
+                  <DrawerTitle>{cafe.name}</DrawerTitle>
+                  {isLoyalCustomer && (
                     <div className="flex items-center gap-1 text-accent mt-1">
                       <Flame className="w-3.5 h-3.5" />
                       <span className="text-xs font-medium">En sadık müşterilerimizdensiniz!</span>
@@ -484,44 +527,29 @@ const CafeDetailPage = () => {
             </DrawerHeader>
             
             <div className="space-y-3 mt-4">
-              <a href={`https://maps.google.com/?q=${mockCafeData.address}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-secondary rounded-xl hover:bg-secondary/80 transition-colors">
-                <MapPin className="w-5 h-5 text-primary" />
-                <span className="text-sm">{mockCafeData.address}</span>
-              </a>
-              <a href={`tel:${mockCafeData.phone}`} className="flex items-center gap-3 p-3 bg-secondary rounded-xl hover:bg-secondary/80 transition-colors">
-                <Phone className="w-5 h-5 text-primary" />
-                <span className="text-sm">{mockCafeData.phone}</span>
-              </a>
-              <a href={`https://instagram.com/${mockCafeData.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-secondary rounded-xl hover:bg-secondary/80 transition-colors">
-                <Instagram className="w-5 h-5 text-primary" />
-                <span className="text-sm">{mockCafeData.instagram}</span>
-              </a>
-              <a href={`https://${mockCafeData.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-secondary rounded-xl hover:bg-secondary/80 transition-colors">
-                <Globe className="w-5 h-5 text-primary" />
-                <span className="text-sm">{mockCafeData.website}</span>
-              </a>
+              {cafe.address && (
+                <a href={`https://maps.google.com/?q=${cafe.address}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-secondary rounded-xl hover:bg-secondary/80 transition-colors">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  <span className="text-sm">{cafe.address}</span>
+                </a>
+              )}
+              {cafe.phone && (
+                <a href={`tel:${cafe.phone}`} className="flex items-center gap-3 p-3 bg-secondary rounded-xl hover:bg-secondary/80 transition-colors">
+                  <Phone className="w-5 h-5 text-primary" />
+                  <span className="text-sm">{cafe.phone}</span>
+                </a>
+              )}
+              {cafe.website && (
+                <a href={`https://${cafe.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-secondary rounded-xl hover:bg-secondary/80 transition-colors">
+                  <Globe className="w-5 h-5 text-primary" />
+                  <span className="text-sm">{cafe.website}</span>
+                </a>
+              )}
               
               {/* Membership Management */}
               <div className="pt-2 border-t border-border/50">
                 <button
-                  onClick={() => {
-                    setIsMember(false);
-                    localStorage.removeItem(`member-${mockCafeData.id}`);
-                    // Save cafe data for search
-                    const unfollowedCafes = JSON.parse(localStorage.getItem("unfollowedCafes") || "[]");
-                    if (!unfollowedCafes.find((c: any) => c.id === mockCafeData.id)) {
-                      unfollowedCafes.push({
-                        id: mockCafeData.id,
-                        name: mockCafeData.name,
-                        visits: mockCafeData.visits,
-                        totalForReward: mockCafeData.totalForReward,
-                        logoType: mockCafeData.logoType,
-                        logoEmoji: (mockCafeData as any).logoEmoji || "☕",
-                      });
-                      localStorage.setItem("unfollowedCafes", JSON.stringify(unfollowedCafes));
-                    }
-                    navigate("/home");
-                  }}
+                  onClick={() => navigate("/home")}
                   className="flex items-center gap-3 p-3 w-full text-left rounded-xl hover:bg-destructive/10 transition-colors group"
                 >
                   <UserMinus className="w-5 h-5 text-muted-foreground group-hover:text-destructive transition-colors" />
@@ -539,12 +567,12 @@ const CafeDetailPage = () => {
       <QRModal 
         open={showQRModal} 
         onOpenChange={setShowQRModal}
-        cafeId={mockCafeData.id}
-        selectedCampaigns={selectedCampaignIds.map(id => mockCafeData.campaigns.find(c => c.id === id)).filter(Boolean) as typeof mockCafeData.campaigns}
+        cafeId={cafe.id}
+        selectedCampaigns={selectedCampaignIds.map(cid => campaigns.find(c => c.id === cid)).filter(Boolean)}
         onRemoveCampaign={(campaignId) => {
-          const newSelectedIds = selectedCampaignIds.filter(id => id !== campaignId);
+          const newSelectedIds = selectedCampaignIds.filter(cid => cid !== campaignId);
           setSelectedCampaignIds(newSelectedIds);
-          localStorage.setItem(`selected-campaigns-${mockCafeData.id}`, JSON.stringify(newSelectedIds));
+          localStorage.setItem(`selected-campaigns-${cafe.id}`, JSON.stringify(newSelectedIds));
         }}
       />
 
@@ -561,27 +589,12 @@ const CafeDetailPage = () => {
                   Sadık Müşteri İstatistikleri
                 </DrawerTitle>
                 <p className="text-[11px] text-muted-foreground">
-                  {mockCafeData.name} ile yolculuğunuz
+                  {cafe.name} ile yolculuğunuz
                 </p>
               </div>
             </DrawerHeader>
 
             <div className="space-y-2.5">
-              {/* Top Stats Cards */}
-              <div className="grid grid-cols-1 gap-2">
-                {/* Total Savings */}
-                <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-lg p-2.5 border border-success/20">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <TrendingUp className="w-3.5 h-3.5 text-success shrink-0" />
-                    <span className="text-[10px] font-medium text-muted-foreground leading-tight">Toplam Tasarruf</span>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-lg font-bold text-foreground">₺450</span>
-                  </div>
-                  <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight">Harika biriktirdiniz! 💰</p>
-                </div>
-              </div>
-
               {/* Detailed Stats */}
               <div className="space-y-2">
                 <h3 className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
@@ -597,26 +610,23 @@ const CafeDetailPage = () => {
                       <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight">Bu kafeye yaptığınız ziyaretler</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-base font-bold text-primary">{mockCafeData.visits}</p>
+                      <p className="text-base font-bold text-primary">{loyalty?.visits_count || visits}</p>
                       <p className="text-[9px] text-muted-foreground">ziyaret</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Money Saved */}
+                {/* Points */}
                 <div className="bg-card rounded-lg p-2.5 border border-border">
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-medium text-foreground">Toplam Tasarruf</p>
-                      <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight">İndirimler ve ödüllerle</p>
+                      <p className="text-[11px] font-medium text-foreground">Toplam Puan</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight">Biriktirdiğiniz puanlar</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-base font-bold text-success">₺450</p>
-                      <p className="text-[9px] text-muted-foreground">tasarruf</p>
+                      <p className="text-base font-bold text-success">{visits}</p>
+                      <p className="text-[9px] text-muted-foreground">puan</p>
                     </div>
-                  </div>
-                  <div className="bg-success/10 rounded p-1.5">
-                    <p className="text-[9px] text-success font-medium leading-tight">💰 Bu tutarı başka şeylere harcayabilirsiniz!</p>
                   </div>
                 </div>
 
@@ -625,11 +635,10 @@ const CafeDetailPage = () => {
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] font-medium text-foreground">Sadakat Seviyesi</p>
-                      <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight">Mükemmel performans!</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <Flame className="w-4 h-4 text-accent" />
-                      <span className="text-sm font-bold text-accent">VIP</span>
+                      <span className="text-sm font-bold text-accent">{levelLabel(level)}</span>
                     </div>
                   </div>
                   <div className="bg-background/50 rounded p-1.5">
