@@ -262,6 +262,7 @@ const HomePage = () => {
                     name={lp.company_name}
                     visits={lp.points}
                     totalForReward={REWARD_GOAL}
+                    slug={lp.company_slug}
                     logoEmoji="☕"
                     onClick={() => navigate(`/cafe/${lp.company_slug}`)}
                     compact

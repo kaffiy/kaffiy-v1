@@ -7,11 +7,14 @@ interface CafeCardProps {
   totalForReward: number;
   logoEmoji?: string;
   logoType?: string;
+  logoUrl?: string;
+  slug?: string;
   onClick?: () => void;
   compact?: boolean;
 }
 
-const CafeCard = ({ name, visits, totalForReward, logoEmoji = "☕", logoType, onClick, compact = false }: CafeCardProps) => {
+const CafeCard = ({ name, visits, totalForReward, logoEmoji = "☕", logoType, logoUrl, slug, onClick, compact = false }: CafeCardProps) => {
+  const isHalic = logoType === "halic" || slug?.includes("halic");
   const progress = (visits / totalForReward) * 100;
   
   if (compact) {
@@ -26,8 +29,10 @@ const CafeCard = ({ name, visits, totalForReward, logoEmoji = "☕", logoType, o
       >
         {/* Logo */}
         <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center text-2xl overflow-hidden">
-          {logoType === "halic" ? (
+          {isHalic ? (
             <HalicKahveLogo size={56} />
+          ) : logoUrl ? (
+            <img src={logoUrl} alt={name} className="w-full h-full object-cover" />
           ) : (
             logoEmoji
           )}
@@ -60,8 +65,10 @@ const CafeCard = ({ name, visits, totalForReward, logoEmoji = "☕", logoType, o
     >
       {/* Logo */}
       <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center text-2xl shrink-0 overflow-hidden">
-        {logoType === "halic" ? (
+        {isHalic ? (
           <HalicKahveLogo size={56} />
+        ) : logoUrl ? (
+          <img src={logoUrl} alt={name} className="w-full h-full object-cover" />
         ) : (
           logoEmoji
         )}
