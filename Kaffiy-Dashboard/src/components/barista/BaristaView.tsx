@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
-import { supabase } from "@/lib/supabase"; // Supabase import edildi
-import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode"; // QR Scanner
+import { supabase } from "@/lib/supabase";
+import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +17,6 @@ import {
 
 type ActiveTab = "qr" | "reward";
 
-// Mock baristas can stay or be fetched from DB
 const mockBaristas = [
   { id: "1", name: "Ayşe K." },
   { id: "2", name: "Mehmet Y." },
@@ -26,12 +26,15 @@ const mockBaristas = [
 
 export const BaristaView = () => {
   const { theme, toggleTheme } = useTheme("barista");
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>("qr");
 
   // Customer & Scanning State
   const [customer, setCustomer] = useState<any>(null);
   const [customerName, setCustomerName] = useState<string | null>(null);
   const [currentStamps, setCurrentStamps] = useState(0);
+  const [currentCompanyId, setCurrentCompanyId] = useState<string | null>(null);
+
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
@@ -46,13 +49,36 @@ export const BaristaView = () => {
   const [dailyRewardsUsed, setDailyRewardsUsed] = useState(0);
   const { toast } = useToast();
 
+  // Fetch Barista Company Info
+  useEffect(() => {
+    const fetchBaristaInfo = async () => {
+      if (!user || currentCompanyId) return;
+
+      try {
+        const { data: worker, error } = await supabase
+          .from('worker_tb')
+          .select('company_id')
+          .eq('email', user.email)
+          .single();
+
+        if (error) throw error;
+        if (worker) {
+          console.log("Barista Company ID:", worker.company_id);
+          setCurrentCompanyId(worker.company_id);
+        }
+      } catch (err) {
+        console.error("Worker fetch error:", err);
+      }
+    };
+    fetchBaristaInfo();
+  }, [user, currentCompanyId]);
+
+
   // QR Scanner Effect
   useEffect(() => {
     if (!isCameraOpen) return;
 
     let scanner: Html5QrcodeScanner | null = null;
-
-    // Small delay to ensure DOM element exists
     const timer = setTimeout(() => {
       const config = {
         fps: 10,
@@ -61,40 +87,30 @@ export const BaristaView = () => {
         showTorchButtonIfSupported: true,
         supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
       };
-
       scanner = new Html5QrcodeScanner("barista-scanner", config, false);
-
       scanner.render(
         (decodedText) => {
           console.log("Scanned:", decodedText);
           handleQRScan(decodedText);
-          setIsCameraOpen(false); // Close camera on success
+          setIsCameraOpen(false);
           scanner?.clear();
         },
-        (error) => {
-          // console.warn(error);
-        }
+        () => { }
       );
     }, 100);
 
     return () => {
       clearTimeout(timer);
-      if (scanner) {
-        scanner.clear().catch(err => console.error("Scanner clear error", err));
-      }
+      if (scanner) scanner.clear().catch(err => console.error(err));
     };
   }, [isCameraOpen]);
 
   // Fetch Customer Data from Supabase
   const handleQRScan = async (qrData: string) => {
-    // Add haptic feedback
     if ('vibrate' in navigator) navigator.vibrate(50);
 
-    // Parse User ID from QR (format: u:USER_ID)
     let userId = qrData;
-    if (qrData.startsWith("u:")) {
-      userId = qrData.substring(2);
-    }
+    if (qrData.startsWith("u:")) userId = qrData.substring(2);
 
     setScanResult(userId);
     setIsLoading(true);
@@ -107,129 +123,148 @@ export const BaristaView = () => {
         .eq('id', userId)
         .single();
 
-      if (profileError) {
-        console.error("Profile fetch error:", profileError);
-        toast({ variant: "destructive", title: "Hata", description: "Müşteri bulunamadı." });
-        setCustomer(null);
-        setCustomerName(null);
-        return;
-      }
+      if (profileError) throw profileError;
 
-      // 2. Get Loyalty Points (Assume company_id is known or fetched from barista context)
-      // For now, we will simulate or fetch if possible. 
-      // Ideally we need the logged-in Barista's Company ID.
-      // Let's assume we are in a specific company context. 
-      // TODO: Replace with dynamic company_id from context
-      const companyId = "c2e1f8a7-b0d5-4c9a-9e3f-6a7b8c9d0e1f"; // Placeholder or get form context
-
-      // Try to get dynamic company if available
+      // 2. Get Loyalty Points dynamically
       let currentPoints = 0;
 
-      // Check if existing royalty record
-      /*
-      const { data: royalty } = await supabase
+      if (currentCompanyId) {
+        const { data: royalty } = await supabase
           .from('royalty_tb')
           .select('points')
           .eq('user_id', userId)
-          .eq('company_id', companyId)
+          .eq('company_id', currentCompanyId)
           .single();
-      
-      if (royalty) currentPoints = royalty.points;
-      */
 
-      // For demo/MVP, use local state or dummy value if no backend context yet
-      // But user asked for BACKEND INTGERATION. So let's try real query if possible.
+        if (royalty) currentPoints = royalty.points;
+      }
 
-      console.log("Customer Found:", profile);
       setCustomer(profile);
       setCustomerName(profile.name || "Misafir Müşteri");
-      setCurrentStamps(0); // Default, will update after points added
+      setCurrentStamps(currentPoints);
 
       toast({
         title: "Müşteri bulundu",
-        description: `${profile.name || "Misafir"} - Puan ekleyebilirsiniz.`,
+        description: `${profile.name || "Misafir"} - Mevcut Puan: ${currentPoints}`,
       });
 
     } catch (error: any) {
       console.error("Scan error:", error);
-      toast({ variant: "destructive", title: "Hata", description: "Okuma hatası." });
+      toast({ variant: "destructive", title: "Hata", description: "Müşteri bulunamadı." });
+      setCustomer(null);
+      setCustomerName(null);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleAddPoints = async () => {
-    if (!customer) return;
+    if (!customer || !currentCompanyId) {
+      toast({ variant: "destructive", title: "Hata", description: "Şirket bilgisi eksik." });
+      return;
+    }
 
-    // Simulate Backend Update
-    // In real app, call Supabase RPC or update royalty_tb
-    /*
-    const { error } = await supabase.rpc('add_loyalty_points', {
-        p_user_id: customer.id,
-        p_points: pointsToAdd
-    });
-    */
+    setIsLoading(true);
+    try {
+      // Check if royalty record exists
+      const { data: existingRoyalty } = await supabase
+        .from("royalty_tb")
+        .select("*")
+        .eq("user_id", customer.id)
+        .eq("company_id", currentCompanyId)
+        .single();
 
-    // Optimistic UI update
-    const newTotal = currentStamps + pointsToAdd;
-    setCurrentStamps(Math.min(rewardGoal, newTotal));
+      let newTotal = currentStamps + pointsToAdd;
+      let error;
 
-    setShowSuccessAnimation(true);
-    setTimeout(() => setShowSuccessAnimation(false), 2000);
+      if (existingRoyalty) {
+        const { error: updateError } = await supabase
+          .from("royalty_tb")
+          .update({
+            points: existingRoyalty.points + pointsToAdd,
+            last_visit: new Date().toISOString()
+          })
+          .eq("id", existingRoyalty.id);
+        error = updateError;
+        if (!error) newTotal = existingRoyalty.points + pointsToAdd;
+      } else {
+        const { error: insertError } = await supabase
+          .from("royalty_tb")
+          .insert({
+            user_id: customer.id,
+            company_id: currentCompanyId,
+            points: pointsToAdd,
+            level: 'explorer',
+            visits_count: 1,
+            last_activity: new Date().toISOString()
+          });
+        error = insertError;
+        if (!error) newTotal = pointsToAdd;
+      }
 
-    toast({
-      title: "Puan Eklendi",
-      description: `${customerName} - +${pointsToAdd} puan`,
-    });
+      if (error) throw error;
+
+      setCurrentStamps(newTotal);
+      setShowSuccessAnimation(true);
+      setTimeout(() => setShowSuccessAnimation(false), 2000);
+
+      toast({
+        title: "Puan Eklendi",
+        description: `${customerName} - +${pointsToAdd} puan. Yeni Toplam: ${newTotal}`,
+      });
+
+    } catch (error: any) {
+      console.error("Transaction error:", error);
+      toast({ variant: "destructive", title: "İşlem Başarısız", description: error.message });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleGiveReward = () => {
-    if (!customerName) {
-      toast({
-        title: "Önce QR okutun",
-        description: "Ödül vermek için müşteri QR'ını okutun.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (dailyRewardsUsed >= dailyRewardLimit) {
-      toast({
-        title: "Günlük limit doldu",
-        description: "Bugün için ücretsiz kahve limiti doldu.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleGiveReward = async () => {
+    if (!customerName || !currentCompanyId) return;
 
     if (currentStamps < rewardCost) {
-      toast({
-        title: "Yetersiz puan",
-        description: `Ödül için en az ${rewardCost} puan gerekli.`,
-        variant: "destructive",
-      });
+      toast({ title: "Yetersiz puan", description: `En az ${rewardCost} puan gerekli.`, variant: "destructive" });
       return;
     }
 
-    setShowSuccessAnimation(true);
-    setTimeout(() => setShowSuccessAnimation(false), 2000);
-    setDailyRewardsUsed((prev) => Math.min(dailyRewardLimit, prev + 1));
-    setCurrentStamps((prev) => Math.max(0, prev - rewardCost));
-    toast({
-      title: "Ödül verildi!",
-      description: `${customerName} ödülünü kullandı. -${rewardCost} puan`,
-    });
+    setIsLoading(true);
+    try {
+      // Update DB
+      const { error } = await supabase
+        .from("royalty_tb")
+        .update({
+          points: currentStamps - rewardCost,
+          last_visit: new Date().toISOString()
+        })
+        .eq("user_id", customer.id)
+        .eq("company_id", currentCompanyId);
+
+      if (error) throw error;
+
+      setShowSuccessAnimation(true);
+      setTimeout(() => setShowSuccessAnimation(false), 2000);
+      setCurrentStamps(prev => prev - rewardCost);
+
+      toast({
+        title: "Ödül verildi!",
+        description: `${customerName} ödül kullandı. -${rewardCost} puan`,
+      });
+
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Hata", description: error.message });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isCloseToReward = currentStamps >= rewardGoal - 1;
   const isDark = theme === "dark";
 
   return (
-    <div className={cn(
-      "min-h-screen flex flex-col transition-colors duration-300",
-      isDark ? "bg-[#000000]" : "bg-[#F8FAFC]"
-    )}>
-      {/* Success Animation Overlay */}
+    <div className={cn("min-h-screen flex flex-col transition-colors duration-300", isDark ? "bg-[#000000]" : "bg-[#F8FAFC]")}>
+      {/* Success Animation */}
       {showSuccessAnimation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
           <div className={cn(
@@ -252,29 +287,12 @@ export const BaristaView = () => {
               Halic Kahve
             </h1>
           </div>
-
-          {/* Theme Switcher */}
-          <button
-            onClick={toggleTheme}
-            className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg active:scale-95",
-              isDark ? "bg-[#1a1a1a] border border-[#C2410C]/20" : "bg-white border border-border/30"
-            )}
-          >
+          <button onClick={toggleTheme} className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg active:scale-95", isDark ? "bg-[#1a1a1a] border border-[#C2410C]/20" : "bg-white border border-border/30")}>
             {isDark ? <Sun className="w-5 h-5 text-[#C2410C]" /> : <Moon className="w-5 h-5 text-foreground" />}
           </button>
         </div>
 
-        {/* Barista Selector */}
-        <button
-          onClick={() => setIsBaristaDialogOpen(true)}
-          className={cn(
-            "w-full flex items-center justify-between px-4 py-3.5 rounded-xl border transition-all",
-            isDark
-              ? selectedBarista ? "bg-white/5 border-[#C2410C]/30" : "bg-white/5 border-white/10"
-              : selectedBarista ? "bg-primary/5 border-primary/30" : "bg-white border-border/30"
-          )}
-        >
+        <button onClick={() => setIsBaristaDialogOpen(true)} className={cn("w-full flex items-center justify-between px-4 py-3.5 rounded-xl border transition-all", isDark ? "bg-white/5 border-white/10" : "bg-white border-border/30")}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-muted">
               <User className="w-4 h-4 text-muted-foreground" />
@@ -291,14 +309,8 @@ export const BaristaView = () => {
 
       {/* Main Content */}
       <main className="flex-1 px-5 flex flex-col">
-        {/* Customer Card */}
         {customerName ? (
-          <div className={cn(
-            "rounded-3xl p-6 mb-4 animate-fade-in relative overflow-hidden transition-all duration-300",
-            isCloseToReward
-              ? isDark ? "bg-gradient-to-br from-gold/20 to-gold/5 border-gold/30" : "bg-gradient-to-br from-gold/15 to-gold/5"
-              : isDark ? "bg-white/5 border border-white/10" : "bg-white border border-border/50"
-          )}>
+          <div className={cn("rounded-3xl p-6 mb-4 animate-fade-in relative overflow-hidden transition-all duration-300", isCloseToReward ? isDark ? "bg-gradient-to-br from-gold/20 to-gold/5 border-gold/30" : "bg-gradient-to-br from-gold/15 to-gold/5" : isDark ? "bg-white/5 border border-white/10" : "bg-white border border-border/50")}>
             <div className="flex items-center gap-3.5 mb-6">
               <div className="w-12 h-12 rounded-2xl bg-sage/10 flex items-center justify-center">
                 <User className="w-6 h-6 text-sage" />
@@ -308,42 +320,26 @@ export const BaristaView = () => {
                 <p className="text-xs text-muted-foreground">{customer?.email}</p>
               </div>
             </div>
-
             <div className="mb-5 text-center">
-              <p className={cn("text-[56px] font-extrabold leading-none mb-1", isDark ? "text-white" : "text-[#1E293B]")}>
-                {currentStamps}
-              </p>
+              <p className={cn("text-[56px] font-extrabold leading-none mb-1", isDark ? "text-white" : "text-[#1E293B]")}>{currentStamps}</p>
               <p className="text-sm font-medium text-muted-foreground">Puan</p>
             </div>
           </div>
         ) : (
-          // Empty State
-          <div className={cn(
-            "rounded-3xl p-8 border-2 border-dashed mb-4 flex flex-col items-center justify-center transition-all",
-            isDark ? "border-white/10 bg-white/5" : "border-border/60 bg-muted/10"
-          )}>
+          <div className={cn("rounded-3xl p-8 border-2 border-dashed mb-4 flex flex-col items-center justify-center transition-all", isDark ? "border-white/10 bg-white/5" : "border-border/60 bg-muted/10")}>
             <QrCode className="w-8 h-8 text-muted-foreground mb-4" />
             <p className="text-sm font-medium text-muted-foreground">Müşteri QR kodunu okutun</p>
           </div>
         )}
 
-        {/* Action Area */}
         <div className="flex-1 flex flex-col justify-center pb-4">
           {activeTab === "qr" && (
             <div className="animate-fade-in space-y-4">
-              {/* Camera Area */}
               <div className="flex justify-center">
                 {isCameraOpen ? (
-                  <div id="barista-scanner"
-                    className="w-[90vw] max-w-[400px] aspect-square rounded-3xl overflow-hidden bg-black" />
+                  <div id="barista-scanner" className="w-[90vw] max-w-[400px] aspect-square rounded-3xl overflow-hidden bg-black" />
                 ) : (
-                  <button
-                    onClick={() => setIsCameraOpen(true)}
-                    className={cn(
-                      "relative w-[90vw] max-w-[400px] aspect-square rounded-3xl overflow-hidden border-2 flex items-center justify-center",
-                      isDark ? "bg-white/5 border-white/10" : "bg-muted/20 border-border/50"
-                    )}
-                  >
+                  <button onClick={() => setIsCameraOpen(true)} className={cn("relative w-[90vw] max-w-[400px] aspect-square rounded-3xl overflow-hidden border-2 flex items-center justify-center", isDark ? "bg-white/5 border-white/10" : "bg-muted/20 border-border/50")}>
                     <div className="text-center space-y-2">
                       <QrCode className="w-16 h-16 mx-auto text-muted-foreground/50" />
                       <p className="text-sm font-medium text-muted-foreground">Kamerayı Aç</p>
@@ -352,7 +348,6 @@ export const BaristaView = () => {
                 )}
               </div>
 
-              {/* Points Selector */}
               <div className="flex items-center justify-center">
                 <div className={cn("inline-flex items-center gap-3 rounded-2xl px-3 py-2 border", isDark ? "bg-white/5" : "bg-white")}>
                   <Button variant="ghost" size="icon" onClick={() => setPointsToAdd(p => Math.max(1, p - 1))}>-</Button>
@@ -361,20 +356,14 @@ export const BaristaView = () => {
                 </div>
               </div>
 
-              {/* Primary Action */}
               {customerName ? (
-                <Button
-                  onClick={handleAddPoints}
-                  className="w-full h-16 rounded-2xl text-base font-bold bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
-                >
+                <Button onClick={handleAddPoints} disabled={isLoading} className="w-full h-16 rounded-2xl text-base font-bold bg-[#C2410C] hover:bg-[#C2410C]/90 text-white">
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
                   PUAN EKLE
                 </Button>
               ) : (
-                <div className="w-full h-16 flex items-center justify-center text-muted-foreground text-sm">
-                  Önce müşteri okutun
-                </div>
+                <div className="w-full h-16 flex items-center justify-center text-muted-foreground text-sm">Önce müşteri okutun</div>
               )}
-
             </div>
           )}
 
@@ -385,11 +374,8 @@ export const BaristaView = () => {
                 <h3 className="text-lg font-semibold">Ödül Ver</h3>
                 <p className="text-sm text-muted-foreground">Müşteri puanları ödül için yeterliyse kullanın.</p>
               </div>
-              <Button
-                onClick={handleGiveReward}
-                disabled={!customerName}
-                className="w-full h-16 rounded-2xl bg-gold text-white font-bold"
-              >
+              <Button onClick={handleGiveReward} disabled={!customerName || isLoading} className="w-full h-16 rounded-2xl bg-gold text-white font-bold">
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
                 Ödül Ver (-{rewardCost} Puan)
               </Button>
             </div>
@@ -397,7 +383,6 @@ export const BaristaView = () => {
         </div>
       </main>
 
-      {/* Bottom Navigation */}
       <nav className={cn("border-t safe-area-bottom", isDark ? "bg-black border-white/10" : "bg-white border-border/50")}>
         <div className="flex px-4 py-3">
           <button onClick={() => setActiveTab("qr")} className={cn("flex-1 py-3 text-center", activeTab === "qr" ? "text-primary font-bold" : "text-muted-foreground")}>QR İşlemleri</button>
@@ -405,19 +390,12 @@ export const BaristaView = () => {
         </div>
       </nav>
 
-      {/* Barista Dialog */}
       <Dialog open={isBaristaDialogOpen} onOpenChange={setIsBaristaDialogOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Barista Seç</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            {mockBaristas.map(b => (
-              <div key={b.id} onClick={() => { setSelectedBarista(b.id); setIsBaristaDialogOpen(false); }} className="p-3 border rounded-lg cursor-pointer hover:bg-muted">
-                {b.name}
-              </div>
-            ))}
-          </div>
+          <DialogHeader><DialogTitle>Barista Seç</DialogTitle></DialogHeader>
+          <div className="space-y-2">{mockBaristas.map(b => (
+            <div key={b.id} onClick={() => { setSelectedBarista(b.id); setIsBaristaDialogOpen(false); }} className="p-3 border rounded-lg cursor-pointer hover:bg-muted">{b.name}</div>
+          ))}</div>
         </DialogContent>
       </Dialog>
     </div>
