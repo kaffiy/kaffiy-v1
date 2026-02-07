@@ -9,9 +9,14 @@ import { supabase } from '@/lib/supabase';
 interface UserProfile {
     id: string;
     email: string;
+    first_name: string | null;
+    last_name: string | null;
     name: string | null;
     phone: string | null;
     avatar_url: string | null;
+    date_of_birth: string | null;
+    gender: string | null;
+    status: string;
     created_at: string;
 }
 
@@ -72,7 +77,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                 .single();
 
             if (error) throw error;
-            setProfile(data);
+            if (data) {
+                setProfile({
+                    ...data,
+                    name: [data.first_name, data.last_name].filter(Boolean).join(' ') || null,
+                });
+            }
         } catch (error) {
             console.error('Profile fetch error:', error);
             setProfile(null);

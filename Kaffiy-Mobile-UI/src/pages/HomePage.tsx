@@ -1,140 +1,142 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import CafeCard from "@/components/CafeCard";
 import BottomNav from "@/components/BottomNav";
 import QRModal from "@/components/QRModal";
 import { Input } from "@/components/ui/input";
-import { Coffee, TrendingUp, Search, Lock } from "lucide-react";
-import { HalicKahveLogo } from "@/components/HalicKahveLogo";
+import { Coffee, TrendingUp, Search, Loader2 } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/lib/supabase";
 
-// Mock data - all available cafes
-const allCafes = [
-  { id: 1, name: "Halic Kahve", visits: 2, totalForReward: 5, logoType: "halic" },
-  { id: 2, name: "Brew House", visits: 1, totalForReward: 5, logoEmoji: "🫖" },
-  { id: 3, name: "Coffee Lab", visits: 4, totalForReward: 5, logoEmoji: "🧪" },
-  { id: 4, name: "Starbucks", visits: 0, totalForReward: 5, logoEmoji: "⭐" },
-  { id: 5, name: "Kahve Dünyası", visits: 0, totalForReward: 5, logoEmoji: "🌍" },
-];
-
-// Mock stats
-const weeklyStats = {
-  totalPoints: 127,
-  thisWeek: 9,
-  currentStreak: 5,
-};
-
-// Weekly activity data (last 7 days)
-const weeklyActivity = [
-  { day: "Pzt", value: 3 },
-  { day: "Sal", value: 1 },
-  { day: "Çar", value: 2 },
-  { day: "Per", value: 0 },
-  { day: "Cum", value: 2 },
-  { day: "Cmt", value: 1 },
-  { day: "Paz", value: 0 },
-];
-
-const maxActivity = Math.max(...weeklyActivity.map(d => d.value), 1);
+const REWARD_GOAL = 5;
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const { user, profile, loyaltyPoints, totalPoints, isLoading } = useUser();
   const [activeTab, setActiveTab] = useState<"qr" | "profile">("qr");
   const [showQRModal, setShowQRModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [unfollowedCafes, setUnfollowedCafes] = useState<any[]>([]);
-  const [memberCafes, setMemberCafes] = useState<any[]>([]);
-  const [showBirthdayPrompt, setShowBirthdayPrompt] = useState(false);
-  
-  // Mock user data - auto-assigned username
-  const getAssignedUsername = () => {
-    const stored = localStorage.getItem("assigned-username");
-    if (stored) {
-      const validMatch = /^KahveSever\d{6}$/.test(stored);
-      if (validMatch) return stored;
-    }
-    const randomSuffix = Math.floor(Math.random() * 1_000_000)
-      .toString()
-      .padStart(6, "0");
-    const assigned = `KahveSever${randomSuffix}`;
-    localStorage.setItem("assigned-username", assigned);
-    return assigned;
-  };
-  const displayName = getAssignedUsername();
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [weeklyActivity, setWeeklyActivity] = useState<{ day: string; value: number }[]>([]);
+  const [thisWeekPoints, setThisWeekPoints] = useState(0);
+  const [streak, setStreak] = useState(0);
 
-  // Load member cafes and unfollowed cafes from localStorage
+  // Display name from DB profile or fallback
+  const displayName = profile?.name || profile?.email?.split("@")[0] || user?.user_metadata?.name || "Kullanıcı";
+
+  // Show birthday prompt if no date_of_birth in profile
+  const showBirthdayPrompt = profile && !profile.date_of_birth;
+
+  // Fetch weekly activity from qr_tb (last 7 days)
   useEffect(() => {
-    // Get member cafes (cafes that user is a member of)
-    const memberIds = allCafes.filter(cafe => {
-      const stored = localStorage.getItem(`member-${cafe.id}`);
-      return stored === "true";
-    }).map(cafe => cafe.id);
+    if (!user) return;
 
-    // If no memberships found, initialize with default cafes
-    if (memberIds.length === 0) {
-      // Initialize with first 3 cafes as default members
-      allCafes.slice(0, 3).forEach(cafe => {
-        localStorage.setItem(`member-${cafe.id}`, "true");
-      });
-      setMemberCafes(allCafes.slice(0, 3));
-    } else {
-      setMemberCafes(allCafes.filter(cafe => memberIds.includes(cafe.id)));
-    }
+    const fetchWeeklyData = async () => {
+      const now = new Date();
+      const dayNames = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+      const days: { day: string; value: number }[] = [];
+      let weekTotal = 0;
+      let currentStreak = 0;
+      let streakBroken = false;
 
-    // Load unfollowed cafes
-    const stored = localStorage.getItem("unfollowedCafes");
-    if (stored) {
-      try {
-        setUnfollowedCafes(JSON.parse(stored));
-      } catch {
-        setUnfollowedCafes([]);
+      // Get start of week (Monday)
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      // Fetch QR scans for last 7 days
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(now.getDate() - 6);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+
+      const { data: scans } = await supabase
+        .from("qr_tb")
+        .select("created_at, points_earned")
+        .eq("user_id", user.id)
+        .gte("created_at", sevenDaysAgo.toISOString())
+        .order("created_at", { ascending: true });
+
+      // Build daily activity for last 7 days
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(now.getDate() - i);
+        const dayStart = new Date(date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(date);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const dayScans = (scans || []).filter((s) => {
+          const scanDate = new Date(s.created_at);
+          return scanDate >= dayStart && scanDate <= dayEnd;
+        });
+
+        const dayPoints = dayScans.reduce((sum, s) => sum + (s.points_earned || 0), 0);
+        days.push({ day: dayNames[date.getDay()], value: dayPoints });
+
+        // Count this week's points
+        if (date >= startOfWeek) {
+          weekTotal += dayPoints;
+        }
+
+        // Calculate streak (consecutive days with activity, from today backwards)
+        if (!streakBroken) {
+          if (dayScans.length > 0) {
+            currentStreak++;
+          } else if (i < 6) {
+            streakBroken = true;
+          }
+        }
       }
+
+      setWeeklyActivity(days);
+      setThisWeekPoints(weekTotal);
+      setStreak(currentStreak);
+    };
+
+    fetchWeeklyData();
+  }, [user]);
+
+  // Search cafes from DB
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
     }
 
-    // Birthday info prompt after registration
-    const registrationComplete = localStorage.getItem("registration-complete") === "true";
-    const storedBirthdate = localStorage.getItem("user-birthdate");
-    setShowBirthdayPrompt(registrationComplete && !storedBirthdate);
-  }, []);
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("company_tb")
+        .select("id, name, slug, logo_url")
+        .ilike("name", `%${searchQuery}%`)
+        .eq("is_active", true)
+        .limit(10);
 
-  // Filter cafes based on search query (include all cafes and unfollowed cafes)
-  const searchResults = searchQuery.trim() 
-    ? [
-        ...allCafes.filter(cafe => 
-          cafe.name.toLowerCase().includes(searchQuery.toLowerCase())
-        ),
-        ...unfollowedCafes.filter(cafe => 
-          cafe.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !allCafes.some(ac => ac.id === cafe.id)
-        )
-      ].filter((cafe, index, self) => 
-        // Remove duplicates based on id
-        index === self.findIndex(c => c.id === cafe.id)
-      )
-    : [];
+      setSearchResults(data || []);
+    }, 300);
 
-  // Check if a cafe is a member cafe
-  const isMemberCafe = (cafeId: number) => {
-    const stored = localStorage.getItem(`member-${cafeId}`);
-    return stored === "true";
-  };
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  // Check if a cafe is unfollowed
-  const isUnfollowedCafe = (cafeId: number) => {
-    return unfollowedCafes.some(cafe => cafe.id === cafeId);
-  };
+  // Max activity for bar chart scaling
+  const maxActivity = useMemo(
+    () => Math.max(...weeklyActivity.map((d) => d.value), 1),
+    [weeklyActivity]
+  );
 
-  // Handle re-following a cafe
-  const handleReFollow = (cafe: any) => {
-    localStorage.setItem(`member-${cafe.id}`, "true");
-    // Remove from unfollowed list
-    const updated = unfollowedCafes.filter(c => c.id !== cafe.id);
-    setUnfollowedCafes(updated);
-    localStorage.setItem("unfollowedCafes", JSON.stringify(updated));
-    // Add to member cafes
-    setMemberCafes([...memberCafes, cafe]);
-    // Navigate to cafe page
-    navigate(`/cafe/${cafe.id}`);
-  };
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate("/login");
+    }
+  }, [isLoading, user, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="mobile-container min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="mobile-container min-h-screen bg-background safe-area-top pb-24 flex flex-col">
@@ -174,14 +176,14 @@ const HomePage = () => {
         </section>
       )}
 
-      {/* Cafes Section - Now at top */}
+      {/* Cafes Section */}
       <section className="py-4 animate-slide-up" style={{ animationDelay: "0.1s" }}>
         <div className="flex items-center justify-between mb-4 px-6">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Coffee className="w-5 h-5" />
             Üye Kafelerim
           </h2>
-          <span className="text-sm text-muted-foreground">{memberCafes.length} kafe</span>
+          <span className="text-sm text-muted-foreground">{loyaltyPoints.length} kafe</span>
         </div>
 
         {/* Search Bar */}
@@ -192,14 +194,7 @@ const HomePage = () => {
               type="text"
               placeholder="Kafe ara..."
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-              }}
-              onFocus={() => {
-                if (searchQuery.trim().length > 0) {
-                  setShowSearchResults(true);
-                }
-              }}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
             />
           </div>
@@ -209,67 +204,36 @@ const HomePage = () => {
         {searchQuery.trim().length > 0 && searchResults.length > 0 && (
           <div className="px-6 mb-4 space-y-2">
             {searchResults.map((cafe) => {
-              const isMember = isMemberCafe(cafe.id);
-              const isUnfollowed = isUnfollowedCafe(cafe.id);
-              const isLocked = isUnfollowed && !isMember;
-
+              const loyalty = loyaltyPoints.find((lp) => lp.company_id === cafe.id);
               return (
                 <button
                   key={cafe.id}
-                  onClick={() => {
-                    if (isLocked) {
-                      handleReFollow(cafe);
-                    } else if (isMember) {
-                      navigate(`/cafe/${cafe.id}`);
-                    }
-                  }}
-                  className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all ${
-                    isLocked
-                      ? "bg-muted/50 border-muted-foreground/30 opacity-75 hover:opacity-100 hover:border-primary/50"
-                      : isMember
-                      ? "bg-card border-border hover:shadow-card hover:border-primary/20"
-                      : "bg-card border-border hover:shadow-card hover:border-primary/20"
-                  } active:scale-[0.98]`}
+                  onClick={() => navigate(`/cafe/${cafe.slug}`)}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border bg-card border-border hover:shadow-card hover:border-primary/20 active:scale-[0.98] transition-all"
                 >
-                  {/* Logo */}
-                  <div className={`w-14 h-14 rounded-xl bg-secondary flex items-center justify-center text-2xl shrink-0 overflow-hidden ${
-                    isLocked ? "opacity-60" : ""
-                  }`}>
-                    {cafe.logoType === "halic" ? (
-                      <HalicKahveLogo size={56} />
+                  <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center text-2xl shrink-0 overflow-hidden">
+                    {cafe.logo_url ? (
+                      <img src={cafe.logo_url} alt={cafe.name} className="w-full h-full object-cover" />
                     ) : (
-                      cafe.logoEmoji
+                      "☕"
                     )}
                   </div>
-                  
-                  {/* Info */}
                   <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center gap-2">
-                      <h3 className={`font-semibold text-foreground truncate ${isLocked ? "opacity-75" : ""}`}>
-                        {cafe.name}
-                      </h3>
-                      {isLocked && (
-                        <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
-                      )}
-                    </div>
-                    {isMember && !isLocked && (
+                    <h3 className="font-semibold text-foreground truncate">{cafe.name}</h3>
+                    {loyalty ? (
                       <>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                          {cafe.visits}/{cafe.totalForReward} ziyaret
+                          {loyalty.points} puan · {loyalty.level}
                         </p>
-                        {/* Mini Progress */}
                         <div className="mt-2 h-1.5 bg-secondary rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-primary rounded-full transition-all duration-500"
-                            style={{ width: `${(cafe.visits / cafe.totalForReward) * 100}%` }}
+                            style={{ width: `${Math.min((loyalty.points / REWARD_GOAL) * 100, 100)}%` }}
                           />
                         </div>
                       </>
-                    )}
-                    {isLocked && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Takip etmek için tıklayın
-                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-0.5">Henüz üye değilsiniz</p>
                     )}
                   </div>
                 </button>
@@ -285,25 +249,31 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* Horizontal Scroll - Member Cafes */}
+        {/* Horizontal Scroll - Member Cafes from DB */}
         {searchQuery.trim().length === 0 && (
-          <div 
+          <div
             className="flex gap-3 overflow-x-auto pb-2 px-6 snap-x snap-mandatory"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
-            {memberCafes.map((cafe) => (
-              <div key={cafe.id} className="snap-start">
-                <CafeCard
-                  name={cafe.name}
-                  visits={cafe.visits}
-                  totalForReward={cafe.totalForReward}
-                  logoEmoji={cafe.logoEmoji}
-                  logoType={cafe.logoType}
-                  onClick={() => navigate(`/cafe/${cafe.id}`)}
-                  compact
-                />
+            {loyaltyPoints.length > 0 ? (
+              loyaltyPoints.map((lp) => (
+                <div key={lp.company_id} className="snap-start">
+                  <CafeCard
+                    name={lp.company_name}
+                    visits={lp.points}
+                    totalForReward={REWARD_GOAL}
+                    logoEmoji="☕"
+                    onClick={() => navigate(`/cafe/${lp.company_slug}`)}
+                    compact
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="w-full text-center py-8">
+                <p className="text-muted-foreground text-sm">Henüz üye olduğunuz kafe yok</p>
+                <p className="text-muted-foreground text-xs mt-1">Bir kafenin QR kodunu taratarak başlayın</p>
               </div>
-            ))}
+            )}
           </div>
         )}
       </section>
@@ -311,22 +281,22 @@ const HomePage = () => {
       {/* Spacer to push activity to bottom */}
       <div className="flex-1" />
 
-      {/* Activity Section - Minimalist */}
+      {/* Activity Section */}
       <section className="px-6 mb-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5" />
           Aktivite
         </h2>
-        
-        {/* Weekly Bar Graph - Minimal */}
+
+        {/* Weekly Bar Graph */}
         <div className="flex items-end justify-between gap-3 h-16 mb-6 px-2">
           {weeklyActivity.map((item, index) => (
             <div key={index} className="flex-1 flex flex-col items-center gap-2">
-              <div 
+              <div
                 className="w-full max-w-[24px] mx-auto bg-primary rounded-full transition-all duration-300"
-                style={{ 
-                  height: item.value > 0 ? `${(item.value / maxActivity) * 100}%` : '6px',
-                  opacity: item.value > 0 ? 0.8 : 0.2
+                style={{
+                  height: item.value > 0 ? `${(item.value / maxActivity) * 100}%` : "6px",
+                  opacity: item.value > 0 ? 0.8 : 0.2,
                 }}
               />
               <span className="text-[10px] text-muted-foreground">{item.day}</span>
@@ -334,20 +304,20 @@ const HomePage = () => {
           ))}
         </div>
 
-        {/* Minimal Stats Row */}
+        {/* Stats Row */}
         <div className="flex items-center justify-around py-4">
           <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">{weeklyStats.totalPoints}</p>
+            <p className="text-2xl font-bold text-foreground">{totalPoints}</p>
             <p className="text-[10px] text-muted-foreground mt-1">Toplam</p>
           </div>
           <div className="w-px h-8 bg-border/50" />
           <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">{weeklyStats.currentStreak} 🔥</p>
+            <p className="text-2xl font-bold text-foreground">{streak} 🔥</p>
             <p className="text-[10px] text-muted-foreground mt-1">Seri</p>
           </div>
           <div className="w-px h-8 bg-border/50" />
           <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">{weeklyStats.thisWeek}</p>
+            <p className="text-2xl font-bold text-foreground">{thisWeekPoints}</p>
             <p className="text-[10px] text-muted-foreground mt-1">Bu Hafta</p>
           </div>
         </div>
@@ -357,14 +327,17 @@ const HomePage = () => {
       <QRModal open={showQRModal} onOpenChange={setShowQRModal} />
 
       {/* Bottom Navigation */}
-      <BottomNav activeTab={activeTab} onTabChange={(tab) => {
-        if (tab === "qr") {
-          setShowQRModal(true);
-        } else if (tab === "profile") {
-          navigate("/profile");
-        }
-        setActiveTab(tab);
-      }} />
+      <BottomNav
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          if (tab === "qr") {
+            setShowQRModal(true);
+          } else if (tab === "profile") {
+            navigate("/profile");
+          }
+          setActiveTab(tab);
+        }}
+      />
     </div>
   );
 };
