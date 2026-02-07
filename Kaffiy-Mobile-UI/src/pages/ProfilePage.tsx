@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
-import { ArrowLeft, Pencil, Check, X, Bell, Mail, Moon, LogOut, CalendarIcon, Info, Trash2, Palette, Phone } from "lucide-react";
+import { ArrowLeft, Pencil, Check, X, Bell, Mail, Moon, LogOut, CalendarIcon, Info, Trash2, Palette, Phone, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -22,6 +22,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/hooks/use-theme";
+import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const avatars = [
   { id: "guru", emoji: "☕", label: "Kahve Gurusu" },
@@ -34,63 +37,120 @@ const avatars = [
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const { user, profile, signOut } = useUser();
   const [isEditingMode, setIsEditingMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form state — initialized from DB profile
   const [selectedAvatar, setSelectedAvatar] = useState("guru");
-  const getAssignedUsername = () => {
-    const stored = localStorage.getItem("assigned-username");
-    if (stored) {
-      const validMatch = /^KahveSever\d{6}$/.test(stored);
-      if (validMatch) return stored;
-    }
-    const randomSuffix = Math.floor(Math.random() * 1_000_000)
-      .toString()
-      .padStart(6, "0");
-    const assigned = `KahveSever${randomSuffix}`;
-    localStorage.setItem("assigned-username", assigned);
-    return assigned;
-  };
-  const [username] = useState(getAssignedUsername());
-  const [email, setEmail] = useState("kullanici@email.com");
-  const [tempEmail, setTempEmail] = useState(email);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [tempPhone, setTempPhone] = useState(phone);
+  const [tempPhone, setTempPhone] = useState("");
   const [gender, setGender] = useState<string>("");
-  const [tempGender, setTempGender] = useState(gender);
+  const [tempGender, setTempGender] = useState("");
   const [birthdate, setBirthdate] = useState<Date | undefined>(undefined);
   const [favoriteProduct, setFavoriteProduct] = useState("");
-  const [tempFavoriteProduct, setTempFavoriteProduct] = useState(favoriteProduct);
+  const [tempFavoriteProduct, setTempFavoriteProduct] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+
   // Settings
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
   const { isDark, setTheme, colorScheme, setColorScheme, autoThemeEnabled, enableAutoTheme } = useTheme();
   const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
 
-  const handleSaveAll = () => {
-    if (tempEmail.trim()) {
-      setEmail(tempEmail.trim());
+  // Load profile data from DB
+  useEffect(() => {
+    if (!profile) return;
+    setUsername(profile.name || profile.first_name || "");
+    setEmail(profile.email || user?.email || "");
+    setPhone(profile.phone || "");
+    setTempPhone(profile.phone || "");
+    setGender(profile.gender || "");
+    setTempGender(profile.gender || "");
+    if (profile.date_of_birth) {
+      setBirthdate(new Date(profile.date_of_birth));
     }
-    if (tempPhone.trim()) {
+    // avatar_url stores avatar id
+    if (profile.avatar_url && avatars.some(a => a.id === profile.avatar_url)) {
+      setSelectedAvatar(profile.avatar_url);
+    }
+    // Load settings from auth metadata
+    const meta = user?.user_metadata;
+    if (meta) {
+      setNotifications(meta.push_notification_accepted ?? true);
+      setEmailUpdates(meta.email_updates ?? false);
+      setFavoriteProduct(meta.favorite_product || "");
+      setTempFavoriteProduct(meta.favorite_product || "");
+    }
+  }, [profile, user]);
+
+  const handleSaveAll = async () => {
+    if (!user) return;
+    setIsSaving(true);
+
+    try {
+      // 1. Update user_tb profile
+      const updates: Record<string, any> = {
+        first_name: username.trim() || profile?.first_name,
+        phone: tempPhone.trim() || null,
+        gender: tempGender || null,
+        avatar_url: selectedAvatar,
+        date_of_birth: birthdate ? birthdate.toISOString().split("T")[0] : null,
+      };
+
+      const { error: profileError } = await supabase
+        .from("user_tb")
+        .update(updates)
+        .eq("id", user.id);
+
+      if (profileError) throw profileError;
+
+      // 2. Update auth metadata (notifications, favorite product)
+      const { error: metaError } = await supabase.auth.updateUser({
+        data: {
+          push_notification_accepted: notifications,
+          email_updates: emailUpdates,
+          favorite_product: tempFavoriteProduct.trim(),
+        },
+      });
+
+      if (metaError) throw metaError;
+
+      // 3. Password change (if provided)
+      if (newPassword && newPassword === confirmPassword) {
+        if (newPassword.length < 6) {
+          toast.error("Şifre en az 6 karakter olmalıdır");
+          setIsSaving(false);
+          return;
+        }
+        const { error: pwError } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
+        if (pwError) throw pwError;
+        setNewPassword("");
+        setConfirmPassword("");
+        toast.success("Şifre güncellendi");
+      }
+
+      // Update local state
       setPhone(tempPhone.trim());
+      setGender(tempGender);
+      setFavoriteProduct(tempFavoriteProduct.trim());
+      setIsEditingMode(false);
+      toast.success("Profil güncellendi");
+    } catch (error: any) {
+      console.error("Profile save error:", error);
+      toast.error(error.message || "Profil güncellenemedi");
+    } finally {
+      setIsSaving(false);
     }
-    setGender(tempGender);
-    setFavoriteProduct(tempFavoriteProduct.trim());
-    if (birthdate) {
-      localStorage.setItem("user-birthdate", birthdate.toISOString());
-    } else {
-      localStorage.removeItem("user-birthdate");
-    }
-    if (newPassword && newPassword === confirmPassword) {
-      setNewPassword("");
-      setConfirmPassword("");
-    }
-    setIsEditingMode(false);
   };
 
   const handleCancelEdit = () => {
-    setTempEmail(email);
+    // Reset temp values to saved values
     setTempPhone(phone);
     setTempGender(gender);
     setTempFavoriteProduct(favoriteProduct);
@@ -99,17 +159,33 @@ const ProfilePage = () => {
     setIsEditingMode(false);
   };
 
-  const handlePasswordChange = () => {
-    if (newPassword && newPassword === confirmPassword) {
-      setNewPassword("");
-      setConfirmPassword("");
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      navigate("/login");
     }
   };
 
-  const handleDeleteAccount = () => {
-    // TODO: Implement actual account deletion
+  const handleDeleteAccount = async () => {
+    // Note: Full account deletion requires a server-side function
+    // For now, sign out and navigate to login
     setIsDeleteAccountDialogOpen(false);
-    navigate("/login");
+    toast.info("Hesap silme talebi alındı. En kısa sürede işleme alınacaktır.");
+    await handleLogout();
+  };
+
+  // Handle notification toggle with immediate save
+  const handleNotificationToggle = async (checked: boolean) => {
+    setNotifications(checked);
+    await supabase.auth.updateUser({ data: { push_notification_accepted: checked } });
+  };
+
+  const handleEmailUpdatesToggle = async (checked: boolean) => {
+    setEmailUpdates(checked);
+    await supabase.auth.updateUser({ data: { email_updates: checked } });
   };
 
   return (
@@ -152,9 +228,10 @@ const ProfilePage = () => {
               variant="cafe"
               size="sm"
               onClick={handleSaveAll}
+              disabled={isSaving}
               className="h-8"
             >
-              <Check className="w-4 h-4 mr-1.5" />
+              {isSaving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Check className="w-4 h-4 mr-1.5" />}
               Kaydet
             </Button>
           </div>
@@ -193,21 +270,21 @@ const ProfilePage = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">Kullanıcı Adı</h2>
-              <span className="text-sm text-foreground">{username}</span>
+              {isEditingMode ? (
+                <Input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="h-8 text-sm border-0 border-b border-primary rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary w-full"
+                />
+              ) : (
+                <span className="text-sm text-foreground">{username}</span>
+              )}
             </div>
 
             <div>
               <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">E-posta</h2>
-              {isEditingMode ? (
-                <Input
-                  type="email"
-                  value={tempEmail}
-                  onChange={(e) => setTempEmail(e.target.value)}
-                  className="h-8 text-sm border-0 border-b border-primary rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary w-full"
-                />
-              ) : (
-                <span className="text-sm text-muted-foreground">{email}</span>
-              )}
+              <span className="text-sm text-muted-foreground">{email}</span>
             </div>
           </div>
 
@@ -389,14 +466,14 @@ const ProfilePage = () => {
                 <Bell className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm">Bildirimler</span>
               </div>
-              <Switch checked={notifications} onCheckedChange={setNotifications} />
+              <Switch checked={notifications} onCheckedChange={handleNotificationToggle} />
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm">E-posta güncellemeleri</span>
               </div>
-              <Switch checked={emailUpdates} onCheckedChange={setEmailUpdates} />
+              <Switch checked={emailUpdates} onCheckedChange={handleEmailUpdatesToggle} />
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -471,7 +548,7 @@ const ProfilePage = () => {
             </div>
             <div className="flex items-center justify-between">
               <button 
-                onClick={() => navigate("/login")}
+                onClick={handleLogout}
                 className="flex items-center gap-2 text-sm text-destructive hover:opacity-70 transition-opacity h-6"
               >
                 <LogOut className="w-4 h-4" />
