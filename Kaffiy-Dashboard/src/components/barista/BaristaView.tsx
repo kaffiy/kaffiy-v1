@@ -140,12 +140,13 @@ export const BaristaView = () => {
       }
 
       setCustomer(profile);
-      setCustomerName(profile.name || "Misafir Müşteri");
+      const displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || "Misafir Müşteri";
+      setCustomerName(displayName);
       setCurrentStamps(currentPoints);
 
       toast({
         title: "Müşteri bulundu",
-        description: `${profile.name || "Misafir"} - Mevcut Puan: ${currentPoints}`,
+        description: `${displayName} - Mevcut Puan: ${currentPoints}`,
       });
 
     } catch (error: any) {
@@ -182,7 +183,7 @@ export const BaristaView = () => {
           .from("royalty_tb")
           .update({
             points: existingRoyalty.points + pointsToAdd,
-            last_visit: new Date().toISOString()
+            last_activity: new Date().toISOString()
           })
           .eq("id", existingRoyalty.id);
         error = updateError;
@@ -236,7 +237,7 @@ export const BaristaView = () => {
         .from("royalty_tb")
         .update({
           points: currentStamps - rewardCost,
-          last_visit: new Date().toISOString()
+          last_activity: new Date().toISOString()
         })
         .eq("user_id", customer.id)
         .eq("company_id", currentCompanyId);
