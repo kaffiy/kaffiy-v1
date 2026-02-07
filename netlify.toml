@@ -1,0 +1,8 @@
+# Root netlify.toml - each site should set its own base directory in Netlify UI
+# Kaffiy-Dashboard -> base: Kaffiy-Dashboard
+# Kaffiy-Admin -> base: Kaffiy-Admin
+# Kaffiy-Mobile-UI -> base: Kaffiy-Mobile-UI
+
+[build]
+  command = "echo 'Please set base directory in Netlify site settings'"
+  publish = "."
