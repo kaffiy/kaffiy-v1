@@ -26,19 +26,30 @@
 3. Aşağıdaki kodu yapıştır:
 
 ```sql
--- Admin kullanıcısını ekle
+-- ADIM 1: Halıc Kahve şirketini oluştur
+INSERT INTO company_tb (
+  name, slug, description, payment_tier, is_active, created_at, updated_at
+) VALUES (
+  'Halıc Kahve', 'halickahve', 'Test kafesi', 'premium', true, NOW(), NOW()
+) 
+ON CONFLICT (slug) DO UPDATE SET is_active = true
+RETURNING id;
+
+-- ADIM 2: Admin kullanıcısını Halıc Kahve'ye bağla
 INSERT INTO worker_tb (
   id, company_id, shop_id, first_name, last_name, email, 
   role, permissions, is_active, created_at, updated_at
 )
 SELECT 
-  id, NULL, NULL, 'Gökçe', 'Oğuz', 'gokceoguz27@gmail.com',
+  u.id, c.id, NULL, 'Gökçe', 'Oğuz', 'gokceoguz27@gmail.com',
   'brand_admin', '{}', true, NOW(), NOW()
-FROM auth.users
-WHERE email = 'gokceoguz27@gmail.com'
+FROM auth.users u
+CROSS JOIN company_tb c
+WHERE u.email = 'gokceoguz27@gmail.com'
+  AND c.slug = 'halickahve'
 ON CONFLICT (id) DO UPDATE SET
   role = 'brand_admin',
-  company_id = NULL,
+  company_id = (SELECT id FROM company_tb WHERE slug = 'halickahve'),
   is_active = true;
 ```
 
@@ -48,12 +59,16 @@ ON CONFLICT (id) DO UPDATE SET
 Aynı SQL Editor'da bu sorguyu çalıştır:
 
 ```sql
-SELECT * FROM worker_tb WHERE email = 'gokceoguz27@gmail.com';
+SELECT 
+  w.*, c.name as company_name 
+FROM worker_tb w
+LEFT JOIN company_tb c ON w.company_id = c.id
+WHERE w.email = 'gokceoguz27@gmail.com';
 ```
 
 Sonuç:
 - ✅ `role` = `'brand_admin'` olmalı
-- ✅ `company_id` = `NULL` olmalı
+- ✅ `company_name` = `'Halıc Kahve'` olmalı
 - ✅ `is_active` = `true` olmalı
 
 ### 5️⃣ Giriş Yap
