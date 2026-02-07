@@ -1,18 +1,27 @@
 import { useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useCafe } from "@/contexts/CafeContext";
+import { useUser } from "@/contexts/UserContext";
 
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { cafe, isLoading, error } = useCafe();
+  const { cafe, isLoading: cafeLoading, error } = useCafe();
+  const { user, isLoading: userLoading } = useUser();
+
+  const isLoading = cafeLoading || userLoading;
 
   useEffect(() => {
     if (!isLoading && !error && cafe) {
-      // Cafe found, stay on entry or redirect to home/qr with the context
-      navigate(`/qr${window.location.search}`);
+      if (user) {
+        // Mevcut müşteri: direkt ana sayfaya
+        navigate("/home");
+      } else {
+        // Yeni müşteri: QR sayfasına (baristaya göster)
+        navigate(`/qr${window.location.search}`);
+      }
     }
-  }, [isLoading, error, cafe, navigate]);
+  }, [isLoading, error, cafe, user, navigate]);
 
   if (isLoading) {
     return (
