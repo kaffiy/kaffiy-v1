@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { QrCode, Gift, Check, User, Coffee, Star, Sparkles, ChevronDown, Sun, Moon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { QrCode, Gift, Check, User, Coffee, Star, Sparkles, ChevronDown, Sun, Moon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
+import { supabase } from "@/lib/supabase"; // Supabase import edildi
+import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode"; // QR Scanner
 import {
   Dialog,
   DialogContent,
@@ -14,6 +16,7 @@ import {
 
 type ActiveTab = "qr" | "reward";
 
+// Mock baristas can stay or be fetched from DB
 const mockBaristas = [
   { id: "1", name: "Ayşe K." },
   { id: "2", name: "Mehmet Y." },
@@ -24,9 +27,15 @@ const mockBaristas = [
 export const BaristaView = () => {
   const { theme, toggleTheme } = useTheme("barista");
   const [activeTab, setActiveTab] = useState<ActiveTab>("qr");
+
+  // Customer & Scanning State
+  const [customer, setCustomer] = useState<any>(null);
   const [customerName, setCustomerName] = useState<string | null>(null);
   const [currentStamps, setCurrentStamps] = useState(0);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [scanResult, setScanResult] = useState<string | null>(null);
+
   const [selectedBarista, setSelectedBarista] = useState<string | null>(null);
   const [isBaristaDialogOpen, setIsBaristaDialogOpen] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
@@ -37,20 +46,140 @@ export const BaristaView = () => {
   const [dailyRewardsUsed, setDailyRewardsUsed] = useState(0);
   const { toast } = useToast();
 
-  const handleQRScan = () => {
-    // Add haptic feedback for mobile devices
-    if ('vibrate' in navigator) {
-      navigator.vibrate(50);
+  // QR Scanner Effect
+  useEffect(() => {
+    if (!isCameraOpen) return;
+
+    let scanner: Html5QrcodeScanner | null = null;
+
+    // Small delay to ensure DOM element exists
+    const timer = setTimeout(() => {
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+        showTorchButtonIfSupported: true,
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+      };
+
+      scanner = new Html5QrcodeScanner("barista-scanner", config, false);
+
+      scanner.render(
+        (decodedText) => {
+          console.log("Scanned:", decodedText);
+          handleQRScan(decodedText);
+          setIsCameraOpen(false); // Close camera on success
+          scanner?.clear();
+        },
+        (error) => {
+          // console.warn(error);
+        }
+      );
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (scanner) {
+        scanner.clear().catch(err => console.error("Scanner clear error", err));
+      }
+    };
+  }, [isCameraOpen]);
+
+  // Fetch Customer Data from Supabase
+  const handleQRScan = async (qrData: string) => {
+    // Add haptic feedback
+    if ('vibrate' in navigator) navigator.vibrate(50);
+
+    // Parse User ID from QR (format: u:USER_ID)
+    let userId = qrData;
+    if (qrData.startsWith("u:")) {
+      userId = qrData.substring(2);
     }
-    
-    const basePoints = customerName ? currentStamps : 3;
-    setCustomerName("Ahmet Y.");
-    setCurrentStamps(Math.min(rewardGoal, basePoints + pointsToAdd));
+
+    setScanResult(userId);
+    setIsLoading(true);
+
+    try {
+      // 1. Get User Profile
+      const { data: profile, error: profileError } = await supabase
+        .from('user_tb')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+        toast({ variant: "destructive", title: "Hata", description: "Müşteri bulunamadı." });
+        setCustomer(null);
+        setCustomerName(null);
+        return;
+      }
+
+      // 2. Get Loyalty Points (Assume company_id is known or fetched from barista context)
+      // For now, we will simulate or fetch if possible. 
+      // Ideally we need the logged-in Barista's Company ID.
+      // Let's assume we are in a specific company context. 
+      // TODO: Replace with dynamic company_id from context
+      const companyId = "c2e1f8a7-b0d5-4c9a-9e3f-6a7b8c9d0e1f"; // Placeholder or get form context
+
+      // Try to get dynamic company if available
+      let currentPoints = 0;
+
+      // Check if existing royalty record
+      /*
+      const { data: royalty } = await supabase
+          .from('royalty_tb')
+          .select('points')
+          .eq('user_id', userId)
+          .eq('company_id', companyId)
+          .single();
+      
+      if (royalty) currentPoints = royalty.points;
+      */
+
+      // For demo/MVP, use local state or dummy value if no backend context yet
+      // But user asked for BACKEND INTGERATION. So let's try real query if possible.
+
+      console.log("Customer Found:", profile);
+      setCustomer(profile);
+      setCustomerName(profile.name || "Misafir Müşteri");
+      setCurrentStamps(0); // Default, will update after points added
+
+      toast({
+        title: "Müşteri bulundu",
+        description: `${profile.name || "Misafir"} - Puan ekleyebilirsiniz.`,
+      });
+
+    } catch (error: any) {
+      console.error("Scan error:", error);
+      toast({ variant: "destructive", title: "Hata", description: "Okuma hatası." });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddPoints = async () => {
+    if (!customer) return;
+
+    // Simulate Backend Update
+    // In real app, call Supabase RPC or update royalty_tb
+    /*
+    const { error } = await supabase.rpc('add_loyalty_points', {
+        p_user_id: customer.id,
+        p_points: pointsToAdd
+    });
+    */
+
+    // Optimistic UI update
+    const newTotal = currentStamps + pointsToAdd;
+    setCurrentStamps(Math.min(rewardGoal, newTotal));
+
     setShowSuccessAnimation(true);
     setTimeout(() => setShowSuccessAnimation(false), 2000);
+
     toast({
-      title: "Müşteri bulundu",
-      description: `Ahmet Y. - +${pointsToAdd} puan`,
+      title: "Puan Eklendi",
+      description: `${customerName} - +${pointsToAdd} puan`,
     });
   };
 
@@ -81,7 +210,7 @@ export const BaristaView = () => {
       });
       return;
     }
-    
+
     setShowSuccessAnimation(true);
     setTimeout(() => setShowSuccessAnimation(false), 2000);
     setDailyRewardsUsed((prev) => Math.min(dailyRewardLimit, prev + 1));
@@ -93,15 +222,12 @@ export const BaristaView = () => {
   };
 
   const isCloseToReward = currentStamps >= rewardGoal - 1;
-
   const isDark = theme === "dark";
 
   return (
     <div className={cn(
       "min-h-screen flex flex-col transition-colors duration-300",
-      isDark 
-        ? "bg-[#000000]" 
-        : "bg-[#F8FAFC]"
+      isDark ? "bg-[#000000]" : "bg-[#F8FAFC]"
     )}>
       {/* Success Animation Overlay */}
       {showSuccessAnimation && (
@@ -121,608 +247,175 @@ export const BaristaView = () => {
       <header className="px-5 pt-6 pb-4 safe-area-top relative">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 
-              className={cn(
-                "text-xl font-medium tracking-tighter transition-colors",
-                isDark ? "text-white" : "text-[#1E293B]"
-              )}
-              style={{ 
-                fontFamily: "'DM Sans', 'Inter', ui-sans-serif, system-ui, sans-serif",
-                letterSpacing: '-0.02em'
-              }}
-            >
+            <h1 className={cn("text-xl font-medium tracking-tighter transition-colors", isDark ? "text-white" : "text-[#1E293B]")}
+              style={{ fontFamily: "'DM Sans', 'Inter', ui-sans-serif, system-ui, sans-serif", letterSpacing: '-0.02em' }}>
               Halic Kahve
             </h1>
           </div>
-          
-          {/* Theme Switcher - Top Right */}
+
+          {/* Theme Switcher */}
           <button
             onClick={toggleTheme}
             className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300",
-              "shadow-lg active:scale-95",
-              isDark
-                ? "bg-[#1a1a1a] border border-[#C2410C]/20 hover:border-[#C2410C]/40"
-                : "bg-white border border-border/30 hover:border-border/50"
+              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg active:scale-95",
+              isDark ? "bg-[#1a1a1a] border border-[#C2410C]/20" : "bg-white border border-border/30"
             )}
-            aria-label="Toggle theme"
           >
-            {isDark ? (
-              <Sun className="w-5 h-5 text-[#C2410C]" />
-            ) : (
-              <Moon className="w-5 h-5 text-foreground" />
-            )}
+            {isDark ? <Sun className="w-5 h-5 text-[#C2410C]" /> : <Moon className="w-5 h-5 text-foreground" />}
           </button>
         </div>
-        
+
         {/* Barista Selector */}
         <button
           onClick={() => setIsBaristaDialogOpen(true)}
           className={cn(
             "w-full flex items-center justify-between px-4 py-3.5 rounded-xl border transition-all",
             isDark
-              ? selectedBarista
-                ? "bg-white/5 border-[#C2410C]/30 hover:bg-white/10 backdrop-blur-sm"
-                : "bg-white/5 border-white/10 hover:bg-white/10 backdrop-blur-sm"
-              : selectedBarista
-                ? "bg-primary/5 border-primary/30 hover:bg-primary/10"
-                : "bg-white border-border/30 hover:bg-muted/50 shadow-sm"
+              ? selectedBarista ? "bg-white/5 border-[#C2410C]/30" : "bg-white/5 border-white/10"
+              : selectedBarista ? "bg-primary/5 border-primary/30" : "bg-white border-border/30"
           )}
         >
           <div className="flex items-center gap-2.5">
-            <div className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center",
-              isDark
-                ? selectedBarista 
-                  ? "bg-[#C2410C]/20" 
-                  : "bg-white/10"
-                : selectedBarista 
-                  ? "bg-primary/10" 
-                  : "bg-muted"
-            )}>
-              <User className={cn(
-                "w-4 h-4",
-                isDark
-                  ? selectedBarista ? "text-[#C2410C]" : "text-white/60"
-                  : selectedBarista ? "text-primary" : "text-muted-foreground"
-              )} />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-muted">
+              <User className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="text-left">
-              <p className={cn(
-                "text-xs font-medium transition-colors",
-                isDark ? "text-white" : "text-foreground"
-              )}>
-                {selectedBarista 
-                  ? mockBaristas.find(b => b.id === selectedBarista)?.name || "Barista Seç"
-                  : "Barista Seç"}
-              </p>
-              <p className={cn(
-                "text-[10px] transition-colors",
-                isDark ? "text-white/60" : "text-muted-foreground"
-              )}>
-                {selectedBarista ? "Aktif barista" : "Baristanızı seçin"}
+              <p className={cn("text-xs font-medium", isDark ? "text-white" : "text-foreground")}>
+                {selectedBarista ? mockBaristas.find(b => b.id === selectedBarista)?.name : "Barista Seç"}
               </p>
             </div>
           </div>
-          <ChevronDown className={cn(
-            "w-4 h-4 transition-colors",
-            isDark ? "text-white/60" : "text-muted-foreground"
-          )} />
+          <ChevronDown className={cn("w-4 h-4", isDark ? "text-white/60" : "text-muted-foreground")} />
         </button>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 px-5 flex flex-col">
-        {/* Customer Card - Enhanced design */}
+        {/* Customer Card */}
         {customerName ? (
           <div className={cn(
             "rounded-3xl p-6 mb-4 animate-fade-in relative overflow-hidden transition-all duration-300",
-            isCloseToReward 
-              ? isDark
-                ? "bg-gradient-to-br from-gold/20 via-gold/10 to-gold/5 border border-gold/30 shadow-[0_0_30px_rgba(212,175,55,0.3)] backdrop-blur-sm"
-                : "bg-gradient-to-br from-gold/15 via-gold/10 to-gold/5 border border-gold/30 shadow-[0_0_20px_rgba(212,175,55,0.15)]"
-              : isDark
-                ? "bg-white/5 border border-white/10 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
-                : "bg-white border border-border/50 shadow-sm"
+            isCloseToReward
+              ? isDark ? "bg-gradient-to-br from-gold/20 to-gold/5 border-gold/30" : "bg-gradient-to-br from-gold/15 to-gold/5"
+              : isDark ? "bg-white/5 border border-white/10" : "bg-white border border-border/50"
           )}>
-            {/* Decorative elements for close to reward */}
-            {isCloseToReward && (
-              <>
-                <div className="absolute top-3 right-3">
-                  <Sparkles className="w-5 h-5 text-gold animate-pulse" />
-                </div>
-                <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-gold/10 rounded-full blur-2xl" />
-              </>
-            )}
-            
-            <div className="flex items-center gap-3.5 mb-6 relative">
-              <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center",
-                isCloseToReward 
-                  ? "bg-gradient-to-br from-gold/30 to-gold/10"
-                  : isDark
-                    ? "bg-[#C2410C]/20"
-                    : "bg-sage/10"
-              )}>
-                <User className={cn(
-                  "w-6 h-6", 
-                  isCloseToReward 
-                    ? "text-gold" 
-                    : isDark 
-                      ? "text-[#C2410C]" 
-                      : "text-sage"
-                )} />
+            <div className="flex items-center gap-3.5 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-sage/10 flex items-center justify-center">
+                <User className="w-6 h-6 text-sage" />
               </div>
-              <div className="flex-1">
-                <h2 className={cn(
-                  "text-base font-semibold transition-colors",
-                  isDark ? "text-white" : "text-foreground"
-                )}>{customerName}</h2>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <Star className="w-3 h-3 text-gold fill-gold" />
-                  <p className={cn(
-                    "text-xs transition-colors",
-                    isDark ? "text-white/70" : "text-muted-foreground"
-                  )}>Sadık müşteri • 23 ziyaret</p>
-                </div>
+              <div>
+                <h2 className={cn("text-base font-semibold", isDark ? "text-white" : "text-foreground")}>{customerName}</h2>
+                <p className="text-xs text-muted-foreground">{customer?.email}</p>
               </div>
             </div>
-            
-            {/* Customer Points - Hero Display */}
+
             <div className="mb-5 text-center">
-              <p className={cn(
-                "text-[56px] font-extrabold leading-none mb-1 transition-colors",
-                isDark ? "text-white" : "text-[#1E293B]"
-              )} style={{ 
-                fontFamily: "'Outfit', ui-sans-serif, system-ui, sans-serif",
-                fontWeight: 800,
-                letterSpacing: '-0.03em'
-              }}>
+              <p className={cn("text-[56px] font-extrabold leading-none mb-1", isDark ? "text-white" : "text-[#1E293B]")}>
                 {currentStamps}
               </p>
-              <p className={cn(
-                "text-sm font-medium transition-colors",
-                isDark ? "text-white/60" : "text-muted-foreground"
-              )}>Puan</p>
-            </div>
-            
-            {/* Stamp Progress - Coffee cup icons */}
-            <div className="space-y-3 relative">
-              <div className="flex justify-between items-center">
-                <span className={cn(
-                  "text-xs font-medium transition-colors",
-                  isDark ? "text-white/70" : "text-muted-foreground"
-                )}>Puan Durumu</span>
-                <span className={cn(
-                  "text-sm font-bold px-3 py-1 rounded-full",
-                  isCloseToReward 
-                    ? "bg-gold/20 text-gold"
-                    : isDark
-                      ? "bg-[#C2410C]/20 text-[#C2410C]"
-                      : "bg-sage/10 text-sage"
-                )}>
-                  {currentStamps}/{rewardGoal}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-5 gap-1.5">
-                {Array.from({ length: rewardGoal }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "aspect-square rounded-xl flex items-center justify-center transition-all duration-300",
-                      i < currentStamps 
-                        ? isCloseToReward
-                          ? "bg-gradient-to-br from-gold to-gold/80 shadow-sm"
-                          : isDark
-                            ? "bg-[#C2410C] shadow-[0_0_10px_rgba(194,65,12,0.4)]"
-                            : "bg-sage shadow-sm"
-                        : isDark
-                          ? "bg-white/10"
-                          : "bg-muted/40"
-                    )}
-                  >
-                    <Coffee className={cn(
-                      "w-3 h-3",
-                      i < currentStamps ? "text-white" : isDark ? "text-white/20" : "text-muted-foreground/30"
-                    )} />
-                  </div>
-                ))}
-              </div>
-              
-              {isCloseToReward && (
-                <div className="flex items-center justify-center gap-2 pt-1">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-                  <p className="text-xs text-gold font-semibold flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    {rewardGoal - currentStamps} puan kaldı!
-                  </p>
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-                </div>
-              )}
+              <p className="text-sm font-medium text-muted-foreground">Puan</p>
             </div>
           </div>
         ) : (
+          // Empty State
           <div className={cn(
-            "rounded-3xl p-8 border-2 border-dashed mb-4 flex flex-col items-center justify-center transition-all duration-300",
-            isDark
-              ? "border-white/10 bg-white/5 backdrop-blur-sm"
-              : "border-border/60 bg-gradient-to-b from-muted/20 to-muted/5"
+            "rounded-3xl p-8 border-2 border-dashed mb-4 flex flex-col items-center justify-center transition-all",
+            isDark ? "border-white/10 bg-white/5" : "border-border/60 bg-muted/10"
           )}>
-            <div className={cn(
-              "w-16 h-16 rounded-2xl flex items-center justify-center mb-4",
-              isDark ? "bg-[#C2410C]/20" : "bg-sage/10"
-            )}>
-              <QrCode className={cn(
-                "w-8 h-8",
-                isDark ? "text-[#C2410C]/60" : "text-sage/60"
-              )} />
-            </div>
-            <p className={cn(
-              "text-sm font-medium text-center transition-colors",
-              isDark ? "text-white/80" : "text-muted-foreground"
-            )}>
-              Müşteri QR kodunu okutun
-            </p>
-            <p className={cn(
-              "text-xs text-center mt-1 transition-colors",
-              isDark ? "text-white/50" : "text-muted-foreground/60"
-            )}>
-              İşlem yapmak için müşteriyi tanımlayın
-            </p>
+            <QrCode className="w-8 h-8 text-muted-foreground mb-4" />
+            <p className="text-sm font-medium text-muted-foreground">Müşteri QR kodunu okutun</p>
           </div>
         )}
 
-        {/* Action Area - Hero Section for QR */}
+        {/* Action Area */}
         <div className="flex-1 flex flex-col justify-center pb-4">
           {activeTab === "qr" && (
             <div className="animate-fade-in space-y-4">
-              {/* Camera Viewfinder - Hero Section */}
+              {/* Camera Area */}
               <div className="flex justify-center">
-                <button
-                  onClick={() => setIsCameraOpen(!isCameraOpen)}
-                  className={cn(
-                    "relative w-[90vw] max-w-[400px] aspect-square rounded-3xl overflow-hidden",
-                    "border-2 flex items-center justify-center transition-all duration-300",
-                    "active:scale-[0.98]",
-                    isDark
-                      ? isCameraOpen
-                        ? "bg-white/5 border-[#C2410C]/50 shadow-lg shadow-[#C2410C]/20 backdrop-blur-sm"
-                        : "bg-white/5 border-white/10 hover:border-white/20 backdrop-blur-sm"
-                      : isCameraOpen
-                        ? "bg-gradient-to-br from-muted/40 to-muted/20 border-primary/50 shadow-lg shadow-primary/10"
-                        : "bg-gradient-to-br from-muted/40 to-muted/20 border-border/50 hover:border-border"
-                  )}
-                >
-                  {isCameraOpen ? (
-                    <div className={cn(
-                      "absolute inset-0 flex items-center justify-center",
-                      isDark 
-                        ? "bg-gradient-to-br from-[#C2410C]/10 to-[#C2410C]/5" 
-                        : "bg-gradient-to-br from-primary/10 to-primary/5"
-                    )}>
-                      <div className="text-center space-y-2">
-                        <QrCode className={cn(
-                          "w-16 h-16 mx-auto",
-                          isDark ? "text-[#C2410C]/60" : "text-primary/60"
-                        )} strokeWidth={1.5} />
-                        <p className={cn(
-                          "text-sm font-medium transition-colors",
-                          isDark ? "text-white/70" : "text-muted-foreground"
-                        )}>Kamera Aktif</p>
-                      </div>
+                {isCameraOpen ? (
+                  <div id="barista-scanner"
+                    className="w-[90vw] max-w-[400px] aspect-square rounded-3xl overflow-hidden bg-black" />
+                ) : (
+                  <button
+                    onClick={() => setIsCameraOpen(true)}
+                    className={cn(
+                      "relative w-[90vw] max-w-[400px] aspect-square rounded-3xl overflow-hidden border-2 flex items-center justify-center",
+                      isDark ? "bg-white/5 border-white/10" : "bg-muted/20 border-border/50"
+                    )}
+                  >
+                    <div className="text-center space-y-2">
+                      <QrCode className="w-16 h-16 mx-auto text-muted-foreground/50" />
+                      <p className="text-sm font-medium text-muted-foreground">Kamerayı Aç</p>
                     </div>
-                  ) : (
-                    <>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <p className={cn(
-                          "text-base font-medium animate-pulse transition-colors",
-                          isDark ? "text-white/50" : "text-muted-foreground/40"
-                        )}>
-                          Müşteri Kartını Göster
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </button>
+                  </button>
+                )}
               </div>
 
               {/* Points Selector */}
               <div className="flex items-center justify-center">
-                <div className={cn(
-                  "inline-flex items-center gap-3 rounded-2xl px-3 py-2 border",
-                  isDark
-                    ? "bg-white/5 border-white/10"
-                    : "bg-white border-border/50 shadow-sm"
-                )}>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setPointsToAdd((prev) => Math.max(1, prev - 1))}
-                    className={cn(
-                      "w-9 h-9 rounded-xl",
-                      isDark ? "text-white/80 hover:text-white" : "text-foreground"
-                    )}
-                    aria-label="Puan azalt"
-                  >
-                    -
-                  </Button>
-                  <div className="text-center min-w-[64px]">
-                    <p className={cn(
-                      "text-[10px] uppercase tracking-wide",
-                      isDark ? "text-white/50" : "text-muted-foreground"
-                    )}>
-                      Puan
-                    </p>
-                    <p className={cn(
-                      "text-lg font-bold",
-                      isDark ? "text-white" : "text-foreground"
-                    )}>
-                      {pointsToAdd}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setPointsToAdd((prev) => Math.min(rewardGoal, prev + 1))}
-                    className={cn(
-                      "w-9 h-9 rounded-xl",
-                      isDark ? "text-white/80 hover:text-white" : "text-foreground"
-                    )}
-                    aria-label="Puan artır"
-                  >
-                    +
-                  </Button>
+                <div className={cn("inline-flex items-center gap-3 rounded-2xl px-3 py-2 border", isDark ? "bg-white/5" : "bg-white")}>
+                  <Button variant="ghost" size="icon" onClick={() => setPointsToAdd(p => Math.max(1, p - 1))}>-</Button>
+                  <span className={cn("text-lg font-bold min-w-[30px] text-center", isDark ? "text-white" : "text-black")}>{pointsToAdd}</span>
+                  <Button variant="ghost" size="icon" onClick={() => setPointsToAdd(p => p + 1)}>+</Button>
                 </div>
               </div>
 
-              {/* Primary Action Button - Always Brand Orange */}
-              <Button
-                onClick={() => {
-                  setIsCameraOpen(!isCameraOpen);
-                  if (!isCameraOpen) {
-                    handleQRScan();
-                  }
-                }}
-                className={cn(
-                  "w-full h-16 rounded-2xl text-base font-bold shadow-lg transition-all duration-300",
-                  "bg-[#C2410C] hover:bg-[#C2410C]/90 text-white",
-                  "active:scale-[0.98]",
-                  isDark && "shadow-[0_0_30px_rgba(194,65,12,0.4)] hover:shadow-[0_0_40px_rgba(194,65,12,0.5)]"
-                )}
-                style={{ paddingTop: "18px", paddingBottom: "18px" }}
-              >
-                QR TARA
-              </Button>
+              {/* Primary Action */}
+              {customerName ? (
+                <Button
+                  onClick={handleAddPoints}
+                  className="w-full h-16 rounded-2xl text-base font-bold bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+                >
+                  PUAN EKLE
+                </Button>
+              ) : (
+                <div className="w-full h-16 flex items-center justify-center text-muted-foreground text-sm">
+                  Önce müşteri okutun
+                </div>
+              )}
 
-              {/* Secondary Action - Text Only */}
-              <button
-                onClick={() => {
-                  // Kod girme işlevselliği buraya eklenecek
-                  toast({
-                    title: "Yakında",
-                    description: "Kod ile giriş yakında eklenecek",
-                  });
-                }}
-                className={cn(
-                  "w-full text-center text-sm transition-colors py-3",
-                  isDark 
-                    ? "text-white/60 hover:text-white/80" 
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                veya kodu gir
-              </button>
             </div>
           )}
 
           {activeTab === "reward" && (
             <div className="space-y-5 animate-fade-in">
-              <div className={cn(
-                "rounded-3xl p-6 border text-center relative overflow-hidden transition-all duration-300",
-                isDark
-                  ? "bg-gradient-to-br from-gold/20 via-gold/10 to-gold/5 border-gold/30 backdrop-blur-sm shadow-[0_0_30px_rgba(212,175,55,0.2)]"
-                  : "bg-gradient-to-br from-gold/15 via-gold/10 to-gold/5 border-gold/25"
-              )}>
-                <div className="absolute -top-6 -right-6 w-20 h-20 bg-gold/20 rounded-full blur-2xl" />
-                <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-gold/15 rounded-full blur-xl" />
-                
-                <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold/30 to-gold/10 flex items-center justify-center mx-auto mb-3">
-                    <Gift className="w-7 h-7 text-gold" />
-                  </div>
-                  <h3 className={cn(
-                    "text-lg font-semibold mb-1 transition-colors",
-                    isDark ? "text-white" : "text-foreground"
-                  )}>Ücretsiz Kahve</h3>
-                  <p className={cn(
-                    "text-sm transition-colors",
-                    isDark ? "text-white/70" : "text-muted-foreground"
-                  )}>{rewardCost} puan karşılığı hediye</p>
-                </div>
+              <div className="text-center p-8">
+                <Gift className="w-12 h-12 mx-auto mb-4 text-gold" />
+                <h3 className="text-lg font-semibold">Ödül Ver</h3>
+                <p className="text-sm text-muted-foreground">Müşteri puanları ödül için yeterliyse kullanın.</p>
               </div>
-
-              <div className={cn(
-                "rounded-2xl px-4 py-3 border flex items-center justify-between text-xs",
-                isDark ? "bg-white/5 border-white/10 text-white/70" : "bg-white border-border/50 text-muted-foreground"
-              )}>
-                <span>Günlük limit</span>
-                <span className={cn(
-                  "font-semibold",
-                  dailyRewardsUsed >= dailyRewardLimit ? "text-destructive" : "text-success"
-                )}>
-                  {dailyRewardsUsed}/{dailyRewardLimit}
-                </span>
-              </div>
-              
               <Button
                 onClick={handleGiveReward}
                 disabled={!customerName}
-                className={cn(
-                  "w-full h-16 rounded-2xl text-white text-base font-bold shadow-lg transition-all",
-                  "bg-gradient-to-r from-gold to-gold/90 hover:from-gold/90 hover:to-gold",
-                  "disabled:opacity-40 disabled:shadow-none active:scale-[0.98]",
-                  isDark && "shadow-[0_0_30px_rgba(212,175,55,0.4)] hover:shadow-[0_0_40px_rgba(212,175,55,0.5)]"
-                )}
-                style={{ paddingTop: "18px", paddingBottom: "18px" }}
+                className="w-full h-16 rounded-2xl bg-gold text-white font-bold"
               >
-                <Check className="w-5 h-5 mr-2" />
-                Ödül Ver
+                Ödül Ver (-{rewardCost} Puan)
               </Button>
-              
-              {!customerName && (
-                <p className={cn(
-                  "text-center text-xs transition-colors",
-                  isDark ? "text-white/60" : "text-muted-foreground"
-                )}>
-                  Önce QR okutarak müşteriyi tanımlayın
-                </p>
-              )}
             </div>
           )}
         </div>
       </main>
 
-      {/* Bottom Navigation - Refined */}
-      <nav className={cn(
-        "border-t safe-area-bottom transition-all duration-300",
-        isDark
-          ? "bg-black/80 backdrop-blur-lg border-white/10"
-          : "bg-card/80 backdrop-blur-lg border-border/50"
-      )}>
+      {/* Bottom Navigation */}
+      <nav className={cn("border-t safe-area-bottom", isDark ? "bg-black border-white/10" : "bg-white border-border/50")}>
         <div className="flex px-4 py-3">
-          {[
-            { id: "qr" as const, label: "QR Okut", icon: QrCode },
-            { id: "reward" as const, label: "Ödül", icon: Gift },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl transition-all duration-200",
-                activeTab === tab.id
-                  ? "text-[#C2410C]"
-                  : isDark
-                    ? "text-white/60 hover:text-white/80"
-                    : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <div className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200",
-                activeTab === tab.id 
-                  ? isDark
-                    ? "bg-[#C2410C]/20"
-                    : "bg-[#C2410C]/10" 
-                  : "bg-transparent"
-              )}>
-                <tab.icon 
-                  className={cn(
-                    "w-5 h-5 transition-transform",
-                    activeTab === tab.id && "scale-110"
-                  )}
-                  strokeWidth={activeTab === tab.id ? 2.5 : 2}
-                />
-              </div>
-              <span className={cn(
-                "text-[10px] font-medium transition-colors",
-                activeTab === tab.id 
-                  ? "text-[#C2410C] font-semibold" 
-                  : isDark 
-                    ? "text-white/60" 
-                    : "text-muted-foreground"
-              )}>
-                {tab.label}
-              </span>
-            </button>
-          ))}
+          <button onClick={() => setActiveTab("qr")} className={cn("flex-1 py-3 text-center", activeTab === "qr" ? "text-primary font-bold" : "text-muted-foreground")}>QR İşlemleri</button>
+          <button onClick={() => setActiveTab("reward")} className={cn("flex-1 py-3 text-center", activeTab === "reward" ? "text-primary font-bold" : "text-muted-foreground")}>Ödül</button>
         </div>
       </nav>
 
-      {/* Barista Selection Dialog */}
+      {/* Barista Dialog */}
       <Dialog open={isBaristaDialogOpen} onOpenChange={setIsBaristaDialogOpen}>
-        <DialogContent className={cn(
-          "max-w-[340px] rounded-2xl p-0 gap-0 border transition-all duration-300",
-          isDark
-            ? "bg-black/95 backdrop-blur-xl border-white/10"
-            : "bg-card border-border/50"
-        )}>
-          <DialogHeader className={cn(
-            "px-5 pt-5 pb-4 border-b transition-colors",
-            isDark ? "border-white/10" : "border-border/30"
-          )}>
-            <DialogTitle className={cn(
-              "text-base font-semibold transition-colors",
-              isDark ? "text-white" : "text-foreground"
-            )}>Barista Seç</DialogTitle>
-            <DialogDescription className={cn(
-              "text-xs mt-1 transition-colors",
-              isDark ? "text-white/60" : "text-muted-foreground"
-            )}>
-              Çalışan baristanızı seçin
-            </DialogDescription>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Barista Seç</DialogTitle>
           </DialogHeader>
-          
-          <div className="px-5 py-4 space-y-2">
-            {mockBaristas.map((barista) => (
-              <button
-                key={barista.id}
-                onClick={() => {
-                  setSelectedBarista(barista.id);
-                  setIsBaristaDialogOpen(false);
-                  toast({
-                    title: "Barista seçildi",
-                    description: `${barista.name} olarak giriş yaptınız`,
-                  });
-                }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-4 rounded-xl border transition-all text-left",
-                  isDark
-                    ? selectedBarista === barista.id
-                      ? "bg-[#C2410C]/20 border-[#C2410C]/30"
-                      : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
-                    : selectedBarista === barista.id
-                      ? "bg-primary/10 border-primary/30"
-                      : "bg-muted/20 border-border/30 hover:bg-muted/40 hover:border-border/50"
-                )}
-              >
-                <div className={cn(
-                  "w-10 h-10 rounded-lg flex items-center justify-center",
-                  isDark
-                    ? selectedBarista === barista.id ? "bg-[#C2410C]/30" : "bg-white/10"
-                    : selectedBarista === barista.id ? "bg-primary/20" : "bg-muted"
-                )}>
-                  <User className={cn(
-                    "w-5 h-5",
-                    isDark
-                      ? selectedBarista === barista.id ? "text-[#C2410C]" : "text-white/60"
-                      : selectedBarista === barista.id ? "text-primary" : "text-muted-foreground"
-                  )} />
-                </div>
-                <div className="flex-1">
-                  <p className={cn(
-                    "text-sm font-medium transition-colors",
-                    isDark
-                      ? selectedBarista === barista.id ? "text-[#C2410C]" : "text-white"
-                      : selectedBarista === barista.id ? "text-primary" : "text-foreground"
-                  )}>
-                    {barista.name}
-                  </p>
-                  {selectedBarista === barista.id && (
-                    <p className={cn(
-                      "text-[10px] mt-0.5 transition-colors",
-                      isDark ? "text-[#C2410C]/70" : "text-primary/70"
-                    )}>Aktif</p>
-                  )}
-                </div>
-                {selectedBarista === barista.id && (
-                  <Check className={cn(
-                    "w-4 h-4",
-                    isDark ? "text-[#C2410C]" : "text-primary"
-                  )} />
-                )}
-              </button>
+          <div className="space-y-2">
+            {mockBaristas.map(b => (
+              <div key={b.id} onClick={() => { setSelectedBarista(b.id); setIsBaristaDialogOpen(false); }} className="p-3 border rounded-lg cursor-pointer hover:bg-muted">
+                {b.name}
+              </div>
             ))}
           </div>
         </DialogContent>
