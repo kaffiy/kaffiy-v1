@@ -10,31 +10,49 @@ const QRDisplayPage = () => {
   const navigate = useNavigate();
   const { user, profile, signInAnonymously, isLoading } = useUser();
   const [qrValue, setQrValue] = useState("");
-  const backupCode = profile?.name?.split('_')[1] || "------";
+  const [initError, setInitError] = useState(false);
+  const backupCode = profile?.name?.split('_')[1] || user?.id?.substring(0, 6) || "------";
 
   useEffect(() => {
     const initUser = async () => {
       if (!isLoading && !user) {
-        // If no user, create anonymous user automatically
-        await signInAnonymously();
+        try {
+          await signInAnonymously();
+        } catch (err) {
+          console.error("Anonymous sign-in failed:", err);
+          setInitError(true);
+        }
       }
     };
     initUser();
-  }, [user, isLoading, signInAnonymously]);
+  }, [user, isLoading]);
 
   useEffect(() => {
-    if (user && profile) {
-      // Create a secure QR payload
-      // Simple format: `u:${user.id}` to identify it's a user QR
+    if (user) {
       setQrValue(`u:${user.id}`);
     }
-  }, [user, profile]);
+  }, [user]);
 
-  if (isLoading || !user) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="ml-2 text-muted-foreground">Kaffiy'e bağlanılıyor...</p>
+      </div>
+    );
+  }
+
+  if (initError && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-6">
+        <div className="text-center p-8 rounded-3xl bg-secondary/30 backdrop-blur-sm border border-border">
+          <span className="text-5xl mb-4 block">☕</span>
+          <h1 className="text-xl font-bold text-foreground mb-2">Bağlantı Hatası</h1>
+          <p className="text-sm text-muted-foreground mb-4">Lütfen sayfayı yenileyin.</p>
+          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium">
+            Yenile
+          </button>
+        </div>
       </div>
     );
   }

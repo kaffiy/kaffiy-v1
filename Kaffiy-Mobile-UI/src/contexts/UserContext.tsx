@@ -90,7 +90,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           company_id,
           points,
           level,
-          last_visit,
+          last_activity,
           company_tb (
             name,
             slug
@@ -108,7 +108,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                 company_slug: item.company_tb?.slug || '',
                 points: item.points || 0,
                 level: item.level || 'explorer',
-                last_visit: item.last_visit || item.created_at,
+                last_visit: item.last_activity || item.created_at,
             }));
 
             setLoyaltyPoints(loyaltyData);
@@ -174,8 +174,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                 .insert({
                     id: authData.user.id,
                     email,
-                    name,
-                    created_at: new Date().toISOString(),
+                    first_name: name,
+                    last_name: '',
+                    status: 'active',
                 });
 
             if (profileError) throw profileError;
