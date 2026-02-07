@@ -27,10 +27,10 @@ const ProtectedRoute = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Yükleniyor...</p>
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <p className="text-sm font-medium text-muted-foreground animate-pulse">Kaffiy Yükleniyor...</p>
         </div>
       </div>
     );
@@ -38,6 +38,18 @@ const ProtectedRoute = () => {
 
   if (!session) {
     return <Navigate to="/login" replace />;
+  }
+
+  return <Outlet />;
+};
+
+const PublicRoute = () => {
+  const { session, isLoading } = useAuth();
+
+  if (isLoading) return null; // Or a minimal spinner
+
+  if (session) {
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;
@@ -55,20 +67,24 @@ const App = () => (
                 <Sonner />
                 <BrowserRouter>
                   <Routes>
-                    <Route path="/login" element={<Login />} />
+                    {/* Public Routes (Login) */}
+                    <Route element={<PublicRoute />}>
+                      <Route path="/login" element={<Login />} />
+                    </Route>
 
+                    {/* Protected Routes (Dashboard) */}
                     <Route element={<ProtectedRoute />}>
                       <Route path="/" element={<Index />} />
                       <Route path="/customers" element={<Customers />} />
                       <Route path="/campaigns" element={<Campaigns />} />
                       <Route path="/team" element={<Team />} />
-                      {/* <Route path="/rewards" element={<Rewards />} /> */} {/* Gelecekte kullanılmak üzere saklandı */}
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/admin/onboarding" element={<SuperAdmin />} />
                     </Route>
 
-                    <Route path="*" element={<NotFound />} />
+                    {/* Catch all - Redirect to login or dashboard depending on auth */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </BrowserRouter>
               </TooltipProvider>
