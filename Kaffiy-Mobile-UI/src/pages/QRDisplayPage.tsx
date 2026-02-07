@@ -7,14 +7,16 @@ import StepProgress from "@/components/StepProgress";
 import { Loader2 } from "lucide-react";
 
 /**
- * Get or create a temporary guest ID stored in localStorage.
- * This ID is used in the QR code so barista can identify the guest.
- * When the guest signs up, this temp ID can be linked to their real account.
+ * Get or create a permanent guest ID stored in localStorage.
+ * Format: kahvesever123456 (6 digit random number)
+ * This ID is permanent — the user keeps it until they register and change their name.
+ * Used in QR code so barista can identify the customer.
  */
 const getGuestId = (): string => {
   const stored = localStorage.getItem("kaffiy_guest_id");
   if (stored) return stored;
-  const newId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  const randomSuffix = Math.floor(100000 + Math.random() * 900000).toString();
+  const newId = `kahvesever${randomSuffix}`;
   localStorage.setItem("kaffiy_guest_id", newId);
   return newId;
 };
@@ -35,9 +37,10 @@ const QRDisplayPage = () => {
   }, [user, isLoading]);
 
   const isGuest = !user;
+  const guestId = getGuestId();
   const displayName = profile?.name
-    || (user ? `${user.email?.split('@')[0] || 'Kullanıcı'}` : "Misafir Kullanıcı");
-  const backupCode = user?.id?.substring(0, 6)?.toUpperCase() || getGuestId().substring(6, 12).toUpperCase();
+    || (user ? `${user.email?.split('@')[0] || 'Kullanıcı'}` : guestId);
+  const backupCode = user?.id?.substring(0, 6)?.toUpperCase() || guestId.replace('kahvesever', '');
 
   if (isLoading) {
     return (
