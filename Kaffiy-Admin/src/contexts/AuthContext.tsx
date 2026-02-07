@@ -29,14 +29,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
      * Check if user has admin privileges
      */
     const checkAdminRole = async (userEmail: string): Promise<boolean> => {
+        console.log('🔍 Starting admin check for:', userEmail);
+        
         try {
             const { data: worker, error } = await supabase
                 .from('worker_tb')
                 .select('role, company_id')
                 .eq('email', userEmail)
-                .single();
+                .single() as { data: { role: string; company_id: string } | null; error: any };
 
-            console.log('🔍 Admin check:', { email: userEmail, worker, error });
+            console.log('🔍 Admin check result:', { email: userEmail, worker, error });
 
             if (error) {
                 console.error('❌ Worker role check error:', error);
@@ -48,18 +50,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return false;
             }
 
-            setWorkerRole(worker);
-
-            // Check if user is brand_admin (highest admin role)
-            const hasAdminRole = worker.role === 'brand_admin';
-
-            console.log('✅ Admin access:', hasAdminRole, '| Role:', worker.role);
-
-            setIsAdmin(hasAdminRole);
-            return hasAdminRole;
-
+            const adminRoles = ['admin', 'brand_admin', 'brand_manager', 'store_manager'];
+            const isAdmin = adminRoles.includes(worker.role);
+            console.log('✅ Admin status:', { email: userEmail, role: worker.role, isAdmin });
+            
+            return isAdmin;
         } catch (error) {
-            console.error('❌ Admin role check error:', error);
+            console.error('❌ Unexpected error in admin check:', error);
             return false;
         }
     };
@@ -74,7 +71,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user?.email) {
             const hasAccess = await checkAdminRole(session.user.email);
 
-            if (!hasAccess) {
+            if (hasAccess) {
+                // Fetch worker role details
+                const { data: worker } = await supabase
+                    .from('worker_tb')
+                    .select('role, company_id')
+                    .eq('email', session.user.email)
+                    .single() as { data: { role: string; company_id: string } | null; error: any };
+                if (worker) {
+                    setWorkerRole({ role: worker.role, company_id: worker.company_id });
+                    setIsAdmin(true);
+                }
+            } else {
                 // User is not an admin - sign them out
                 console.warn('⛔ Access denied: User is not an admin');
 

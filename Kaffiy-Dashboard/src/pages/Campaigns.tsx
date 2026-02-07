@@ -420,8 +420,10 @@ const Campaigns = () => {
               </div>
             </div>
           ))}
+
         </div>
       </div>
+      )}
 
       <NewCampaignModal
         open={isModalOpen}
@@ -494,8 +496,6 @@ const Campaigns = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      </div>
-  )}
     </DashboardLayout>
   );
 };
