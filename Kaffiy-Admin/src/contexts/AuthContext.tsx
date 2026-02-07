@@ -1,11 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
-import { useToast } from "@/hooks/use-toast";
 
 interface WorkerRole {
     role: string;
-    type_worker?: string;
     company_id?: string;
 }
 
@@ -34,32 +32,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const { data: worker, error } = await supabase
                 .from('worker_tb')
-                .select('role, type_worker, company_id')
+                .select('role, company_id')
                 .eq('email', userEmail)
                 .single();
 
+            console.log('🔍 Admin check:', { email: userEmail, worker, error });
+
             if (error) {
-                console.error('Worker role check error:', error);
+                console.error('❌ Worker role check error:', error);
                 return false;
             }
 
             if (!worker) {
-                console.error('No worker record found for:', userEmail);
+                console.error('❌ No worker record found for:', userEmail);
                 return false;
             }
 
             setWorkerRole(worker);
 
-            // Check if user is admin or brand_admin
-            const hasAdminRole = worker.role === 'admin' ||
-                worker.type_worker === 'brand_admin' ||
-                worker.role === 'brand_admin';
+            // Check if user is brand_admin (highest admin role)
+            const hasAdminRole = worker.role === 'brand_admin';
+
+            console.log('✅ Admin access:', hasAdminRole, '| Role:', worker.role);
 
             setIsAdmin(hasAdminRole);
             return hasAdminRole;
 
         } catch (error) {
-            console.error('Admin role check error:', error);
+            console.error('❌ Admin role check error:', error);
             return false;
         }
     };
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (!hasAccess) {
                 // User is not an admin - sign them out
-                console.warn('Access denied: User is not an admin');
+                console.warn('⛔ Access denied: User is not an admin');
 
                 // Show error message
                 if (typeof window !== 'undefined') {
