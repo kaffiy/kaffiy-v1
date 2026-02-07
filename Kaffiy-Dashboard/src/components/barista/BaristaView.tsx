@@ -177,7 +177,13 @@ export const BaristaView = () => {
   };
 
   const handleAddPoints = async () => {
-    if (!customer || !currentCompanyId) {
+    if (!customer) {
+      toast({ variant: "destructive", title: "Hata", description: "Önce müşteri QR okutun." });
+      return;
+    }
+
+    // Guest doesn't need company_id (no DB write)
+    if (!customer.isGuest && !currentCompanyId) {
       toast({ variant: "destructive", title: "Hata", description: "Şirket bilgisi eksik." });
       return;
     }
