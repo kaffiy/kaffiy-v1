@@ -495,9 +495,8 @@ const Campaigns = () => {
         </AlertDialogContent>
       </AlertDialog>
       </div>
-  )
-}
-    </DashboardLayout >
+  )}
+    </DashboardLayout>
   );
 };
 
