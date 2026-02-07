@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SidebarProvider } from "@/contexts/SidebarContext";
+import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import Login from "./pages/Login";
 import KaffiyAdmin from "./pages/admin/KaffiyAdmin";
@@ -47,26 +49,30 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Public Routes (Login) */}
-              <Route element={<PublicRoute />}>
-                <Route path="/login" element={<Login />} />
-              </Route>
+        <SidebarProvider>
+          <PremiumProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  {/* Public Routes (Login) */}
+                  <Route element={<PublicRoute />}>
+                    <Route path="/login" element={<Login />} />
+                  </Route>
 
-              {/* Protected Routes (Admin Only) */}
-              <Route element={<ProtectedRoute />}>
-                <Route path="/" element={<KaffiyAdmin />} />
-              </Route>
+                  {/* Protected Routes (Admin Only) */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/" element={<KaffiyAdmin />} />
+                  </Route>
 
-              {/* Catch all */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+                  {/* Catch all */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </PremiumProvider>
+        </SidebarProvider>
       </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>
