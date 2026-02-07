@@ -62,6 +62,7 @@ export default function KaffiyAdmin() {
                 .order("created_at", { ascending: false });
 
             if (error) throw error;
+
             setCompanies(data || []);
         } catch (error: any) {
             toast({

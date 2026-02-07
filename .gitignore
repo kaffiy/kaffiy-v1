@@ -80,6 +80,21 @@ coverage/
 *.lcov
 
 # ========================================
+# TEMP & HELPER FILES
+# ========================================
+*.sql
+!supabase/**/*.sql
+deploy-*.ps1
+**/fix_*.js
+**/setup_*.js
+**/check_*.js
+**/debug_*.js
+**/create_*.js
+**/auto_*.js
+**/direct_*.js
+**/*_runner.js
+
+# ========================================
 # MISC
 # ========================================
 .turbo/
