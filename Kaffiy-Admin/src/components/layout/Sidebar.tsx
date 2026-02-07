@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Home, Users, Megaphone, Gift, Settings, Crown, User, LogOut, UserCog } from "lucide-react";
+import { Home, Users, Megaphone, Gift, Settings, Crown, User, LogOut, UserCog, QrCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { usePremium } from "@/contexts/PremiumContext";
@@ -10,6 +10,7 @@ import { KaffiyLogo, KaffiyLogoMark } from "@/components/KaffiyLogo";
 
 const menuItems = [
   { id: "dashboard", label: "Dashboard", icon: Home, path: "/", disabled: false },
+  { id: "terminal", label: "Puan Terminali", icon: QrCode, path: "/terminal", disabled: false },
   { id: "customers", label: "Müşteriler", icon: Users, path: "/customers", disabled: false },
   { id: "campaigns", label: "Kampanyalar", icon: Megaphone, path: "/campaigns", disabled: false },
   { id: "team", label: "Ekip", icon: UserCog, path: "/team", disabled: false },
@@ -23,26 +24,26 @@ export const Sidebar = () => {
   const location = useLocation();
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  
+
   // Force re-render when theme changes by observing document class
   const [isDarkMode, setIsDarkMode] = useState(isDark);
-  
+
   useEffect(() => {
     setIsDarkMode(isDark);
     // Also check document class for immediate updates
     const checkDarkMode = () => {
       setIsDarkMode(document.documentElement.classList.contains("dark"));
     };
-    
+
     const observer = new MutationObserver(checkDarkMode);
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class"],
     });
-    
+
     // Initial check
     checkDarkMode();
-    
+
     return () => observer.disconnect();
   }, [isDark]);
 
@@ -66,7 +67,7 @@ export const Sidebar = () => {
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
-          
+
           return (
             <button
               key={item.id}
@@ -77,8 +78,8 @@ export const Sidebar = () => {
                 isActive
                   ? "text-indigo-600 bg-indigo-50 border-l-4 border-indigo-600"
                   : item.disabled
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
               )}
             >
               <Icon className="w-4 h-4" />

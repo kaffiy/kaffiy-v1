@@ -33,6 +33,7 @@ interface UserContextType {
     isLoading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
     signUp: (email: string, password: string, name: string) => Promise<void>;
+    signInAnonymously: () => Promise<void>;
     signOut: () => Promise<void>;
     refreshLoyalty: () => Promise<void>;
 }
@@ -187,6 +188,31 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     };
 
     /**
+     * Create anonymous user (guest login)
+     */
+    const signInAnonymously = async () => {
+        try {
+            const randomCode = Math.floor(100000 + Math.random() * 900000);
+            const email = `guest_${randomCode}@kaffiy.com`;
+            const password = `guest_${randomCode}_pass`;
+            const name = `kahvesever_${randomCode}`;
+
+            await signUp(email, password, name);
+            // Auto login happens after signup usually, but let's ensure session
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) throw error;
+
+        } catch (error: any) {
+            console.error('Anonymous sign in error:', error);
+            throw new Error(error.message || 'Failed to sign in anonymously');
+        }
+    };
+
+    /**
      * Sign out
      */
     const signOut = async () => {
@@ -285,6 +311,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                 isLoading,
                 signIn,
                 signUp,
+                signInAnonymously,
                 signOut,
                 refreshLoyalty,
             }}

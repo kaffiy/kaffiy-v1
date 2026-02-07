@@ -9,6 +9,7 @@ import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import Login from "./pages/Login";
 import KaffiyAdmin from "./pages/admin/KaffiyAdmin";
+import PointTerminal from "./pages/PointTerminal";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
                   {/* Protected Routes (Admin Only) */}
                   <Route element={<ProtectedRoute />}>
                     <Route path="/" element={<KaffiyAdmin />} />
+                    <Route path="/terminal" element={<PointTerminal />} />
                   </Route>
 
                   {/* Catch all */}
