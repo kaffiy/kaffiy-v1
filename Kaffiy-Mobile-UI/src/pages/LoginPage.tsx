@@ -4,24 +4,26 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PoweredByFooter from "@/components/PoweredByFooter";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { signIn, isLoading, error } = useAuth();
+  const { signIn, isLoading } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      setError(null);
       await signIn(email, password);
       toast.success("Giriş başarılı!");
       navigate("/home");
-    } catch (error) {
-      // Error is already handled by AuthContext
+    } catch (err: any) {
+      setError(err.message || "Giriş yapılamadı");
     }
   };
 
