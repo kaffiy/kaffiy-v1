@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kaffiy Kafe QR Oluşturucu</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 40px; background: #1a1a1a; color: white; }
+    canvas { border: 16px solid white; border-radius: 16px; margin: 20px; }
+    a { display: inline-block; margin-top: 20px; padding: 12px 32px; background: #C2410C; color: white; border-radius: 12px; text-decoration: none; font-weight: bold; }
+    code { background: #333; padding: 8px 16px; border-radius: 8px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>☕ Kaffiy - Kafe QR Kodu</h1>
+  <p>Bu QR kodu masaya koyun. Müşteriler taratınca <code>app.kaffiy.com</code> açılır.</p>
+  <p>URL: <code id="url"></code></p>
+  <canvas id="qr"></canvas>
+  <br>
+  <a id="download" href="#" download="kaffiy-halic-kahve-qr.png">📥 PNG İndir</a>
+
+  <script>
+    const url = 'https://app.kaffiy.com?cafe=halic-kahve-moda';
+    document.getElementById('url').textContent = url;
+    
+    QRCode.toCanvas(document.getElementById('qr'), url, {
+      width: 400,
+      margin: 2,
+      color: { dark: '#000000', light: '#ffffff' }
+    }, function(error) {
+      if (error) console.error(error);
+      // Set download link
+      const canvas = document.getElementById('qr');
+      document.getElementById('download').href = canvas.toDataURL('image/png');
+    });
+  </script>
+</body>
+</html>

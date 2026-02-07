@@ -43,6 +43,7 @@ export const BaristaView = () => {
   const [isBaristaDialogOpen, setIsBaristaDialogOpen] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [pointsToAdd, setPointsToAdd] = useState(1);
+  const [manualQrInput, setManualQrInput] = useState("");
   const dailyRewardLimit = 1;
   const rewardCost = 5;
   const rewardGoal = 5;
@@ -388,6 +389,35 @@ export const BaristaView = () => {
                     </div>
                   </button>
                 )}
+              </div>
+
+              {/* Manuel QR Giriş */}
+              <div className={cn("flex items-center gap-2 rounded-2xl px-3 py-2 border", isDark ? "bg-white/5 border-white/10" : "bg-white border-border/30")}>
+                <input
+                  type="text"
+                  placeholder="Manuel QR kodu girin (ör: g:kahvesever123456)"
+                  value={manualQrInput}
+                  onChange={(e) => setManualQrInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && manualQrInput.trim()) {
+                      handleQRScan(manualQrInput.trim());
+                      setManualQrInput("");
+                    }
+                  }}
+                  className={cn("flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50", isDark ? "text-white" : "text-black")}
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={!manualQrInput.trim()}
+                  onClick={() => {
+                    handleQRScan(manualQrInput.trim());
+                    setManualQrInput("");
+                  }}
+                  className="text-[#C2410C] font-semibold"
+                >
+                  Okut
+                </Button>
               </div>
 
               <div className="flex items-center justify-center">
