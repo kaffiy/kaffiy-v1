@@ -4,15 +4,25 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PoweredByFooter from "@/components/PoweredByFooter";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { signIn, isLoading, error } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    // TODO: Implement actual login
-    navigate("/home");
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      await signIn(email, password);
+      toast.success("Giriş başarılı!");
+      navigate("/home");
+    } catch (error) {
+      // Error is already handled by AuthContext
+    }
   };
 
   const isFormValid = email && password;
@@ -43,7 +53,7 @@ const LoginPage = () => {
         </div>
 
         {/* Form */}
-        <form className="space-y-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        <form onSubmit={handleLogin} className="space-y-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">E-posta</label>
             <Input
@@ -51,6 +61,8 @@ const LoginPage = () => {
               placeholder="ornek@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full"
+              required
             />
           </div>
 
@@ -58,45 +70,55 @@ const LoginPage = () => {
             <label className="text-sm font-medium text-foreground">Şifre</label>
             <Input
               type="password"
-              placeholder="••••••••"
+              placeholder="•••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="w-full"
+              required
             />
           </div>
 
-          <Button 
-            variant="link" 
-            className="p-0 h-auto text-muted-foreground"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/forgot-password");
-            }}
+          {error && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={!isFormValid || isLoading}
           >
-            Şifremi unuttum
+            {isLoading ? "Giriş yapılıyor..." : "Giriş Yap"}
           </Button>
         </form>
+
+        {/* Forgot Password */}
+        <div className="text-center animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <button
+            type="button"
+            onClick={() => navigate("/forgot-password")}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Şifrenizi mi unuttunuz?
+          </button>
+        </div>
+
+        {/* Sign Up Link */}
+        <div className="text-center animate-fade-in" style={{ animationDelay: "0.3s" }}>
+          <p className="text-sm text-muted-foreground">
+            Hesabınız yok mu?{" "}
+            <button
+              onClick={() => navigate("/signup")}
+              className="text-foreground hover:underline transition-colors"
+            >
+              Kayıt ol
+            </button>
+          </p>
+        </div>
       </main>
 
-      {/* Action Buttons */}
-      <footer className="px-6 pb-4 space-y-3 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-        <Button
-          variant="cafe"
-          size="xl"
-          className="w-full"
-          onClick={handleLogin}
-          disabled={!isFormValid}
-        >
-          Giriş Yap
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full text-muted-foreground"
-          onClick={() => navigate("/signup")}
-        >
-          Hesabınız yok mu? Kayıt olun
-        </Button>
-      </footer>
-
+      {/* Footer */}
       <PoweredByFooter />
     </div>
   );

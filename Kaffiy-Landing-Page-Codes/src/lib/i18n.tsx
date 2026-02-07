@@ -21,15 +21,15 @@ const translations = {
     "nav.startPilot": "Get Started",
 
     // Hero
-    "hero.headline": "Paper Cards Out, AI at the Register!",
+    "hero.headline": "Ditch Paper Cards, Bring AI to the Register!",
     "hero.highlight": "AI",
-    "hero.subheadline": "Predict customer behavior and win back regulars automatically with Kaffiy.",
-    "hero.cta.primary": "Win Back Lost Regulars",
-    "hero.cta.setup": "Setup takes only 5 minutes",
+    "hero.subheadline": "The growth engine for your business in tough times. Predict customer behavior and win back regulars automatically.",
+    "hero.cta.primary": "Win Back Lost Customers",
+    "hero.cta.setup": "Setup in just 5 minutes",
     "hero.cta.secondary": "Request a Free Demo",
 
     // Why Kaffiy (Problem & Solution)
-    "whyKaffiy.title": "The Formula for Growth in Tough Times",
+    "whyKaffiy.title": "Your Technology Engine for Growth",
     "whyKaffiy.card1.title": "Win Back Lost Customers",
     "whyKaffiy.card1.desc": "AI detects customers drifting away and automatically brings them back with the right offer.",
     "whyKaffiy.card2.title": "Smart Personalized Campaigns",
@@ -138,6 +138,11 @@ const translations = {
     "about.vision.title": "Our Vision",
     "about.vision.p1": "We aim to create the simplest and most effective loyalty system for cafés. We believe technology doesn't have to be complicated.",
     "about.vision.p2": "Our goal: Help café owners build stronger connections with their customers and make data-driven decisions.",
+    // Login
+    "nav.login": "Login",
+    "nav.userApp": "Customer App",
+    "nav.staffApp": "Business Panel",
+    "nav.management": "Admin Dashboard",
   },
   tr: {
     // Logo
@@ -153,13 +158,13 @@ const translations = {
     // Hero
     "hero.headline": "Kağıt Kartlar Çöpe, Yapay Zeka Kasaya!",
     "hero.highlight": "Yapay Zeka",
-    "hero.subheadline": "Müşteri davranışını tahmin edin, müdavimleri otomatik geri kazanın.",
+    "hero.subheadline": "Ekonomik durgunluğu büyüme fırsatına dönüştüren teknoloji motoru. Müşteri davranışını tahmin edin, müdavimleri otomatik geri kazanın.",
     "hero.cta.primary": "Kayıp Müşterilerinizi Geri Kazanın",
     "hero.cta.setup": "Kurulum sadece 5 dakika",
     "hero.cta.secondary": "Ücretsiz Demo İsteyin",
 
     // Why Kaffiy (Problem & Solution)
-    "whyKaffiy.title": "İşletmenizi Büyüten 3 Kritik Hamle",
+    "whyKaffiy.title": "İşletmenizi Büyüten Teknoloji Motoru",
     "whyKaffiy.card1.title": "Kayıp Müşterileri Geri Kazanın",
     "whyKaffiy.card1.desc": "Gelmesi kesilen müşteriyi yapay zeka tespit eder, otomatik teklif göndererek dükkanınıza geri döndürür.",
     "whyKaffiy.card2.title": "Kişiye Özel Kampanya & Motivasyon",
@@ -200,7 +205,7 @@ const translations = {
     "leadForm.emailPlaceholder": "ornek@kafe.com",
     "leadForm.contact": "Cep Telefonu (WhatsApp)",
     "leadForm.submit": "Erken Erişime Katıl",
-    "leadForm.socialProof": "Şimdiden 50+ kafe yerini ayırttı! 🔥",
+    "leadForm.socialProof": "Erken erişim programına katılın ve ilk avantajları yakalayın! 🔥",
     "leadForm.success": "Teşekkürler! En kısa sürede iletişime geçeceğiz.",
     "leadForm.errorTitle": "Bir hata oluştu",
     "leadForm.errorDesc": "Lütfen biraz sonra tekrar deneyin.",
@@ -268,6 +273,12 @@ const translations = {
     "about.vision.title": "Vizyonumuz",
     "about.vision.p1": "Kafeler için en basit ve etkili sadakat sistemini oluşturmayı hedefliyoruz. Teknolojinin karmaşık olması gerekmediğine inanıyoruz.",
     "about.vision.p2": "Amacımız: Kafe sahiplerinin müşterileriyle daha güçlü bağlar kurmasına ve veri odaklı kararlar almasına yardımcı olmak.",
+
+    // Login
+    "nav.login": "Giriş Yap",
+    "nav.userApp": "Müşteri Arayüzü",
+    "nav.staffApp": "İşletme Takip Paneli",
+    "nav.management": "Yönetim Paneli",
   },
 };
 

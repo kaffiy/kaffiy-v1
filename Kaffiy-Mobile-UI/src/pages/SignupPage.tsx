@@ -7,9 +7,12 @@ import { useNavigate } from "react-router-dom";
 import PoweredByFooter from "@/components/PoweredByFooter";
 import KVKKModal from "@/components/KVKKModal";
 import StepProgress from "@/components/StepProgress";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const { signUp, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -17,9 +20,19 @@ const SignupPage = () => {
   const [pushNotificationAccepted, setPushNotificationAccepted] = useState(false);
   const [isKVKKModalOpen, setIsKVKKModalOpen] = useState(false);
 
-  const handleSendCode = () => {
-    // TODO: Implement actual code sending
-    navigate("/verify");
+  const handleSendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      await signUp(email, password, {
+        kvkk_accepted: kvkkAccepted,
+        push_notification_accepted: pushNotificationAccepted
+      });
+      toast.success("Kayıt başarılı! Lütfen e-postanızı doğrulayın.");
+      navigate("/verify");
+    } catch (error) {
+      // Error is already handled by AuthContext
+    }
   };
 
   const isFormValid = email && password && passwordConfirm && password === passwordConfirm && kvkkAccepted;
@@ -57,7 +70,7 @@ const SignupPage = () => {
         </div>
 
         {/* Form */}
-        <form className="space-y-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        <form onSubmit={handleSendCode} className="space-y-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">E-posta</label>
             <Input
@@ -65,6 +78,8 @@ const SignupPage = () => {
               placeholder="ornek@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full"
+              required
             />
           </div>
 
@@ -72,9 +87,11 @@ const SignupPage = () => {
             <label className="text-sm font-medium text-foreground">Şifre</label>
             <Input
               type="password"
-              placeholder="••••••••"
+              placeholder="•••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="w-full"
+              required
             />
           </div>
 
@@ -82,7 +99,7 @@ const SignupPage = () => {
             <label className="text-sm font-medium text-foreground">Şifre Tekrar</label>
             <Input
               type="password"
-              placeholder="••••••••"
+              placeholder="•••••••••"
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
             />

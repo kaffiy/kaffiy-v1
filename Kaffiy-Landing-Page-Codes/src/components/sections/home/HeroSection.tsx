@@ -86,7 +86,7 @@ export function HeroSection() {
           </h1>
 
           <p 
-            className="text-[15px] sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto mb-8 sm:mb-10 md:mb-12 leading-[1.75] sm:leading-[1.8] animate-fade-in-up text-slate-600 dark:text-slate-400 px-1" 
+            className="text-[15px] sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto mb-6 sm:mb-8 md:mb-10 leading-[1.75] sm:leading-[1.8] animate-fade-in-up text-slate-600 dark:text-slate-400 px-1" 
             style={{ 
               animationDelay: "0.08s",
               transition: 'color 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -94,6 +94,31 @@ export function HeroSection() {
           >
             {t("hero.subheadline")}
           </p>
+
+          {/* Social Proof */}
+          <div 
+            className="flex flex-col items-center gap-2 mb-8 sm:mb-10 md:mb-12 animate-fade-in-up" 
+            style={{ animationDelay: "0.12s" }}
+          >
+            <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+              <div className="flex -space-x-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div 
+                    key={i}
+                    className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-white dark:border-slate-800 flex items-center justify-center text-xs font-medium text-primary"
+                    style={{ animationDelay: `${0.15 + i * 0.05}s` }}
+                  >
+                    {String.fromCharCode(64 + i)}
+                  </div>
+                ))}
+              </div>
+              <span className="ml-2">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Erken Erişim</span> kafeler 
+                <span className="mx-1">·</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Yüksek</span> memnuniyet
+              </span>
+            </div>
+          </div>
 
           <div 
             className="flex flex-col sm:flex-row items-center sm:items-start justify-center gap-4 animate-fade-in-up" 

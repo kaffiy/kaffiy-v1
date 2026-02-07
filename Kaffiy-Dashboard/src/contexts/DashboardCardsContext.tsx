@@ -5,8 +5,7 @@ export type CardId =
   "card-quick-actions" | 
   "card-weekly-stats" | 
   "card-active-campaigns" | 
-  "card-churn-alert" | 
-  "card-trial-progress";
+  "card-churn-alert";
 
 interface DashboardCard {
   id: CardId;
@@ -20,7 +19,6 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
   { id: "card-weekly-stats", name: "Haftalık İstatistikler", description: "Tahmin edilen ziyaretler ve istatistikler" },
   { id: "card-active-campaigns", name: "Aktif Kampanyalar", description: "Aktif kampanyalar ve performansları" },
   { id: "card-churn-alert", name: "Müşteri Kaybı Uyarısı", description: "Kayıp müşteri uyarıları" },
-  { id: "card-trial-progress", name: "Deneme İlerlemesi", description: "Premium deneme süresi takibi" },
 ];
 
 export const LOCKED_DASHBOARD_CARDS: CardId[] = [
@@ -36,7 +34,6 @@ const defaultVisibility: DashboardCardVisibility = {
   "card-weekly-stats": false,
   "card-active-campaigns": true,
   "card-churn-alert": false,
-  "card-trial-progress": true,
 };
 
 const lockedOverrides: DashboardCardVisibility = LOCKED_DASHBOARD_CARDS.reduce(

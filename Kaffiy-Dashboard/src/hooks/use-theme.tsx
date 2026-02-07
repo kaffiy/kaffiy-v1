@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 type Theme = "light" | "dark";
-type Palette = "terracotta" | "sage" | "charcoal" | "latte" | "sand" | "mist";
+type Palette = "default" | "indigo" | "emerald" | "amber" | "rose" | "violet" | "slate" | "zinc";
 type ThemeScope = "dashboard" | "barista";
 
 const storageKey = (scope: ThemeScope, key: "theme" | "palette") =>
@@ -24,17 +24,19 @@ export const useTheme = (scope: ThemeScope = "dashboard") => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem(storageKey(scope, "palette")) as Palette | null;
       if (
-        stored === "terracotta" ||
-        stored === "sage" ||
-        stored === "charcoal" ||
-        stored === "latte" ||
-        stored === "sand" ||
-        stored === "mist"
+        stored === "default" ||
+        stored === "indigo" ||
+        stored === "emerald" ||
+        stored === "amber" ||
+        stored === "rose" ||
+        stored === "violet" ||
+        stored === "slate" ||
+        stored === "zinc"
       ) {
         return stored;
       }
     }
-    return "terracotta";
+    return "default";
   });
 
   useEffect(() => {

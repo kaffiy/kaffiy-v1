@@ -24,20 +24,20 @@ export function WhyKaffiySection() {
   ];
 
   return (
-    <section 
+    <section
       className="section-padding relative overflow-hidden bg-section"
     >
       {/* Subtle warm gradient */}
-      <div 
+      <div
         className="absolute inset-0 pointer-events-none z-0"
         style={{
           background: 'radial-gradient(ellipse at 30% 50%, hsl(var(--primary) / 0.04) 0%, transparent 55%)',
           filter: 'blur(100px)',
         }}
       />
-      
+
       <div className="section-container relative z-10">
-        <h2 
+        <h2
           className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-8 md:mb-12 text-center tracking-tight text-slate-900 dark:text-slate-50"
           style={{ letterSpacing: '-0.04em' }}
         >
@@ -53,7 +53,7 @@ export function WhyKaffiySection() {
             onMouseEnter={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-premium-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-premium)'; }}
           >
-            <div 
+            <div
               className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 group-hover:scale-105"
               style={{
                 backgroundColor: 'hsl(var(--primary) / 0.07)',
@@ -62,7 +62,7 @@ export function WhyKaffiySection() {
             >
               {React.createElement(cards[0].icon, { className: "w-6 h-6 sm:w-7 sm:h-7", style: { color: 'hsl(var(--primary))' } })}
             </div>
-            <h3 
+            <h3
               className="font-heading font-semibold text-lg sm:text-xl mb-2 sm:mb-3 text-slate-900 dark:text-slate-100"
               style={{ letterSpacing: '-0.04em' }}
             >
@@ -80,7 +80,7 @@ export function WhyKaffiySection() {
             onMouseEnter={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-premium-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-premium)'; }}
           >
-            <div 
+            <div
               className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 group-hover:scale-105"
               style={{
                 backgroundColor: 'hsl(var(--primary) / 0.07)',
@@ -89,7 +89,7 @@ export function WhyKaffiySection() {
             >
               {React.createElement(cards[1].icon, { className: "w-6 h-6 sm:w-7 sm:h-7", style: { color: 'hsl(var(--primary))' } })}
             </div>
-            <h3 
+            <h3
               className="font-heading font-semibold text-lg sm:text-xl mb-2 sm:mb-3 text-slate-900 dark:text-slate-100"
               style={{ letterSpacing: '-0.04em' }}
             >
@@ -107,7 +107,7 @@ export function WhyKaffiySection() {
             onMouseEnter={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-premium-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-premium)'; }}
           >
-            <div 
+            <div
               className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 group-hover:scale-105"
               style={{
                 backgroundColor: 'hsl(var(--primary) / 0.07)',
@@ -116,7 +116,7 @@ export function WhyKaffiySection() {
             >
               {React.createElement(cards[2].icon, { className: "w-6 h-6 sm:w-7 sm:h-7", style: { color: 'hsl(var(--primary))' } })}
             </div>
-            <h3 
+            <h3
               className="font-heading font-semibold text-lg sm:text-xl mb-2 sm:mb-3 text-slate-900 dark:text-slate-100"
               style={{ letterSpacing: '-0.04em' }}
             >

@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { Company } from "@/types/database";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Camera, 
+import { QRCodeSVG } from "qrcode.react";
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Camera,
   Save,
   LogOut,
   Shield,
@@ -19,7 +22,10 @@ import {
   TrendingUp,
   Star,
   Instagram,
-  Globe
+  Globe,
+  QrCode,
+  Download,
+  ExternalLink
 } from "lucide-react";
 import { HalicKahveLogo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
@@ -30,6 +36,90 @@ const Profile = () => {
   const { isPremium } = usePremium();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [slug, setSlug] = useState<string>("halic-kahve-moda"); // Default fallback
+
+  useEffect(() => {
+    const fetchCompanyData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Fetch company from worker_tb -> company_tb
+        const { data: worker } = await supabase
+          .from('worker_tb')
+          .select('company_id')
+          .eq('email', user.email)
+          .maybeSingle();
+
+        const workerData = worker as { company_id: string } | null;
+
+        if (workerData?.company_id) {
+          const { data: companyData } = await supabase
+            .from('company_tb')
+            .select('*')
+            .eq('id', workerData.company_id)
+            .single();
+
+          if (companyData) {
+            const comp = companyData as Company;
+            setCompany(comp);
+            setSlug(comp.slug || "halic-kahve-moda");
+          }
+        } else {
+          // Fallback or demo: try getting first company
+          const { data: firstCompany } = await supabase
+            .from('company_tb')
+            .select('*')
+            .limit(1)
+            .maybeSingle();
+
+          if (firstCompany) {
+            const comp = firstCompany as Company;
+            setCompany(comp);
+            if (comp.slug) {
+              setSlug(comp.slug);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading company:", error);
+      }
+    };
+
+    fetchCompanyData();
+  }, []);
+
+  const companySlug = slug;
+  const appUrl = `https://app.kaffiy.com?cafe=${companySlug}`;
+
+  const downloadQRCode = () => {
+    const svg = document.getElementById("cafe-qr-code");
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `${companySlug}-qr-code.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+
+      toast({
+        title: "QR Kod İndirildi",
+        description: "QR kodunuz başarıyla cihazınıza kaydedildi.",
+      });
+    };
+
+    img.src = "data:image/svg+xml;base64," + btoa(svgData);
+  };
 
   const handleSave = () => {
     setIsEditing(false);
@@ -60,7 +150,7 @@ const Profile = () => {
                 <Camera className="w-4 h-4" />
               </button>
             </div>
-            
+
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-1">
                 <h2 className="text-xl font-semibold text-foreground">Halic Kahve</h2>
@@ -120,7 +210,7 @@ const Profile = () => {
           {stats.map((stat) => (
             <div key={stat.label} className="bg-card/60 backdrop-blur-sm rounded-2xl border border-border/50 p-4">
               <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", 
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center",
                   stat.color === "text-sage" && "bg-sage/10",
                   stat.color === "text-gold" && "bg-gold/10",
                   stat.color === "text-success" && "bg-success/10"
@@ -141,12 +231,12 @@ const Profile = () => {
           {/* Personal Info */}
           <div className="bg-card/60 backdrop-blur-sm rounded-2xl border border-border/50 p-6">
             <h3 className="text-lg font-semibold text-foreground mb-6">İşletme Bilgileri</h3>
-            
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>İşletme Adı</Label>
-                <Input 
-                  defaultValue="Halic Kahve" 
+                <Input
+                  defaultValue="Halic Kahve"
                   disabled={!isEditing}
                   className="rounded-xl"
                 />
@@ -155,8 +245,8 @@ const Profile = () => {
                 <Label>E-posta</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    defaultValue="info@caferosetta.com" 
+                  <Input
+                    defaultValue="info@caferosetta.com"
                     disabled={!isEditing}
                     className="rounded-xl pl-10"
                   />
@@ -166,8 +256,8 @@ const Profile = () => {
                 <Label>Telefon</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    defaultValue="+90 216 123 4567" 
+                  <Input
+                    defaultValue="+90 216 123 4567"
                     disabled={!isEditing}
                     className="rounded-xl pl-10"
                   />
@@ -177,8 +267,8 @@ const Profile = () => {
                 <Label>Adres</Label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    defaultValue="Caferağa Mah. Moda Cad. No:45, Kadıköy" 
+                  <Input
+                    defaultValue="Caferağa Mah. Moda Cad. No:45, Kadıköy"
                     disabled={!isEditing}
                     className="rounded-xl pl-10"
                   />
@@ -215,11 +305,54 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
+          {/* Quick Actions & QR Code */}
           <div className="space-y-6">
+            {/* QR Code Section */}
+            <div className="bg-card/60 backdrop-blur-sm rounded-2xl border border-primary/20 p-6 shadow-premium relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+
+              <div className="flex items-center gap-3 mb-6 relative">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <QrCode className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Size Özel QR Kod</h3>
+                  <p className="text-xs text-muted-foreground">Müşterileriniz bu kodu okutarak puan toplasın.</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-6 relative">
+                <div className="p-4 bg-white rounded-2xl shadow-inner border border-border/40">
+                  <QRCodeSVG
+                    id="cafe-qr-code"
+                    value={appUrl}
+                    size={180}
+                    level="H"
+                    includeMargin={false}
+                  />
+                </div>
+
+                <div className="w-full space-y-3">
+                  <div className="p-3 rounded-xl bg-muted/30 border border-border/40 flex items-center justify-between">
+                    <code className="text-[10px] text-muted-foreground truncate max-w-[180px]">
+                      {appUrl}
+                    </code>
+                    <a href={appUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 transition-colors">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+
+                  <Button onClick={downloadQRCode} className="w-full rounded-xl gap-2 shadow-md hover:shadow-lg transition-all">
+                    <Download className="w-4 h-4" />
+                    QR Kodu İndir (PNG)
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-card/60 backdrop-blur-sm rounded-2xl border border-border/50 p-6">
               <h3 className="text-lg font-semibold text-foreground mb-4">Hızlı İşlemler</h3>
-              
+
               <div className="space-y-3">
                 <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/20 hover:bg-muted/30 transition-colors text-left">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -230,7 +363,7 @@ const Profile = () => {
                     <p className="text-xs text-muted-foreground">Şifre ve 2FA yönetimi</p>
                   </div>
                 </button>
-                
+
                 <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/20 hover:bg-muted/30 transition-colors text-left">
                   <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
                     <Bell className="w-5 h-5 text-gold" />
@@ -240,7 +373,7 @@ const Profile = () => {
                     <p className="text-xs text-muted-foreground">E-posta ve push ayarları</p>
                   </div>
                 </button>
-                
+
                 <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/20 hover:bg-muted/30 transition-colors text-left">
                   <div className="w-10 h-10 rounded-xl bg-sage/10 flex items-center justify-center">
                     <Crown className="w-5 h-5 text-sage" />

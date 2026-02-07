@@ -1,6 +1,5 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { VisitsChart } from "@/components/dashboard/VisitsChart";
-import { TrialProgress } from "@/components/dashboard/TrialProgress";
+import { ModernVisitsChart } from "@/components/dashboard/ModernVisitsChart";
 import { ChurnAlert } from "@/components/dashboard/ChurnAlert";
 import { LockedChurnAlert } from "@/components/dashboard/LockedChurnAlert";
 import { QuickActions, QuickActionButtons, AnalyticsCard } from "@/components/dashboard/QuickActions";
@@ -35,7 +34,7 @@ const Index = () => {
     navigate("/settings?tab=dashboard");
   };
 
-  const showPremiumFeatures = isPremium || isTablet;
+  const showPremiumFeatures = isPremium;
 
   // Mobile: Show Barista View
   if (isMobile) {
@@ -90,29 +89,29 @@ const Index = () => {
         </div>
       ) : (
         // Standard View - Full Dashboard
-        <div className="space-y-4 lg:space-y-5">
-          {/* Trial Progress Banner - Show at very top for non-premium users */}
-          {!isPremium && !isTablet && (
-            <div className="lg:hidden">
-              <TrialProgress current={47} limit={50} />
-            </div>
-          )}
-          
+        <div className="space-y-6">
           {/* Main Grid - Responsive for tablet */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             
             {/* Left Column - Main Content */}
-            <div className="md:col-span-8 space-y-4 md:space-y-5">
-              {/* QR and Reward Stats Card */}
+            <div className="md:col-span-8 space-y-6">
+              {/* Modern Visits Chart */}
               {getCardVisibility("card-visits-chart") && (
                 <div data-card-id="card-visits-chart">
+                  <ModernVisitsChart />
+                </div>
+              )}
+
+              {/* QR & Reward Stats */}
+              {getCardVisibility("card-visits-chart") && (
+                <div data-card-id="card-qr-rewards">
                   <QRRewardStatsCard />
                 </div>
               )}
 
               {/* Tablet: Important widgets row */}
               {(getCardVisibility("card-quick-actions") || getCardVisibility("card-weekly-stats")) && (
-                <div className="grid grid-cols-2 gap-4 md:hidden">
+                <div className="grid grid-cols-2 gap-6 md:hidden">
                   {getCardVisibility("card-quick-actions") && (
                     <div data-card-id="card-quick-actions">
                       <QuickActions />
@@ -133,7 +132,7 @@ const Index = () => {
 
               {/* Active Campaigns with Live Feed - Side by side */}
               {getCardVisibility("card-active-campaigns") && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5 items-stretch" data-card-id="card-active-campaigns">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch" data-card-id="card-active-campaigns">
                   <ActiveCampaignsCard />
                   <LiveFeed />
                 </div>
@@ -148,14 +147,7 @@ const Index = () => {
             </div>
 
             {/* Right Column - Desktop Only Sidebar */}
-            <div className="hidden md:block md:col-span-4 space-y-5">
-              {/* Trial Progress - Top priority for non-premium */}
-              {!isPremium && !isTablet && getCardVisibility("card-trial-progress") && (
-                <div data-card-id="card-trial-progress">
-                  <TrialProgress current={47} limit={50} />
-                </div>
-              )}
-              
+            <div className="hidden md:block md:col-span-4 space-y-6">
               {/* Quick Action Buttons (QR Oku, Kampanya) */}
               {getCardVisibility("card-quick-actions") && (
                 <div data-card-id="card-quick-actions">

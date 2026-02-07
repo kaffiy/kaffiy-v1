@@ -15,11 +15,18 @@ app.use(express.json());
 // EMAIL_USER=your-email@gmail.com
 // EMAIL_PASS=your-app-password
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
+    tls: {
+        rejectUnauthorized: false
+    },
+    logger: true,
+    debug: true
 });
 
 app.post('/api/lead', async (req, res) => {

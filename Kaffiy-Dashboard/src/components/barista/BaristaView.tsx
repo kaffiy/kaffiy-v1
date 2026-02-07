@@ -38,6 +38,11 @@ export const BaristaView = () => {
   const { toast } = useToast();
 
   const handleQRScan = () => {
+    // Add haptic feedback for mobile devices
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
+    
     const basePoints = customerName ? currentStamps : 3;
     setCustomerName("Ahmet Y.");
     setCurrentStamps(Math.min(rewardGoal, basePoints + pointsToAdd));

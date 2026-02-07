@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { QrCode, Gift, TrendingUp, TrendingDown, Users, CalendarIcon, Info } from "lucide-react";
+import { QrCode, Gift, CalendarIcon, Info } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -13,139 +13,60 @@ import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useDashboardDateRange } from "@/contexts/DashboardDateRangeContext";
+import { ModernStatsCard } from "./ModernStatsCard";
 
 type PeriodType = "daily" | "weekly" | "monthly";
 
 const statsData = {
   daily: {
-    visits: { value: 45, previous: 40, label: "QR Kullanıldı" },
-    qrGiven: { value: 31, previous: 28, label: "Kampanya Kullanıldı" },
-    rewardUsed: { value: 5, previous: 3, label: "Ödül Verildi" },
+    visits: { value: 45, previous: 40, change: 12.5 },
+    qrGiven: { value: 31, previous: 28, change: 10.7 },
+    rewardUsed: { value: 5, previous: 3, change: 66.7 },
   },
   weekly: {
-    visits: { value: 312, previous: 285, label: "QR Kullanıldı" },
-    qrGiven: { value: 218, previous: 195, label: "Kampanya Kullanıldı" },
-    rewardUsed: { value: 34, previous: 28, label: "Ödül Verildi" },
+    visits: { value: 312, previous: 285, change: 9.5 },
+    qrGiven: { value: 218, previous: 195, change: 11.8 },
+    rewardUsed: { value: 34, previous: 28, change: 21.4 },
   },
   monthly: {
-    visits: { value: 1248, previous: 1120, label: "QR Kullanıldı" },
-    qrGiven: { value: 892, previous: 756, label: "Kampanya Kullanıldı" },
-    rewardUsed: { value: 142, previous: 128, label: "Ödül Verildi" },
+    visits: { value: 1248, previous: 1120, change: 11.4 },
+    qrGiven: { value: 892, previous: 756, change: 18.0 },
+    rewardUsed: { value: 142, previous: 128, change: 10.9 },
   },
-};
-
-const StatCard = ({ 
-  data, 
-  icon: Icon, 
-  iconColor, 
-  gradientColor,
-  iconTextColor,
-  infoText,
-}: { 
-  data: { value: number; previous: number; label: string };
-  icon: React.ElementType;
-  iconColor: string;
-  gradientColor: string;
-  iconTextColor: string;
-  infoText?: string;
-}) => {
-  const change = ((data.value - data.previous) / data.previous) * 100;
-  const isPositive = change >= 0;
-
-  return (
-    <div className={cn(
-      "rounded-xl p-4 border",
-      gradientColor
-    )}>
-      <div className="flex items-center gap-2 mb-2">
-        <div className={cn(
-          "w-8 h-8 rounded-lg flex items-center justify-center",
-          iconColor
-        )}>
-          <Icon className={cn("w-4 h-4", iconTextColor)} />
-        </div>
-        <span className="text-xs font-medium text-muted-foreground">{data.label}</span>
-        {infoText && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="text-muted-foreground/70 hover:text-muted-foreground transition-colors"
-                  aria-label="Bilgi"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">
-                {infoText}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
-      </div>
-      <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-3xl font-bold text-foreground">{data.value}</span>
-        <div className={cn(
-          "flex items-center gap-1 text-xs font-medium",
-          isPositive ? "text-success" : "text-destructive"
-        )}>
-          {isPositive ? (
-            <TrendingUp className="w-3 h-3" />
-          ) : (
-            <TrendingDown className="w-3 h-3" />
-          )}
-          <span>{Math.abs(change).toFixed(1)}%</span>
-        </div>
-      </div>
-      <p className="text-[10px] text-muted-foreground">Önceki: {data.previous}</p>
-    </div>
-  );
 };
 
 export const QRRewardStatsCard = () => {
-  const [period, setPeriod] = useState<PeriodType>("daily");
-  const { preset, setPreset, range, setRange, rangeDays, isCustomRange } = useDashboardDateRange();
+  const [period, setPeriod] = useState<PeriodType>("weekly");
+  const [preset, setPreset] = useState<"daily" | "weekly" | "monthly" | "custom">("weekly");
+  const [isCustomRange, setIsCustomRange] = useState(false);
+  const { range, setRange } = useDashboardDateRange();
 
-  const scaleValue = (value: number) => Math.round(value * rangeDays);
-  const customStats = {
-    visits: {
-      ...statsData.daily.visits,
-      value: scaleValue(statsData.daily.visits.value),
-      previous: scaleValue(statsData.daily.visits.previous),
-    },
-    qrGiven: {
-      ...statsData.daily.qrGiven,
-      value: scaleValue(statsData.daily.qrGiven.value),
-      previous: scaleValue(statsData.daily.qrGiven.previous),
-    },
-    rewardUsed: {
-      ...statsData.daily.rewardUsed,
-      value: scaleValue(statsData.daily.rewardUsed.value),
-      previous: scaleValue(statsData.daily.rewardUsed.previous),
-    },
-  };
-
-  const activeStats = isCustomRange ? customStats : statsData[period];
-
-  const handleRangeSelect = (selectedRange: { from?: Date; to?: Date } | undefined) => {
-    setRange(selectedRange);
+  const handleRangeSelect = (range: any) => {
+    setRange(range);
+    setIsCustomRange(true);
+    setPeriod("daily");
     setPreset("custom");
   };
 
+  const currentData = statsData[period];
+
   return (
-    <div className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl p-4 lg:p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-foreground">QR ve Ödül İstatistikleri</h3>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">QR & Ödül İstatistikleri</h2>
+          <p className="text-sm text-gray-500">Müşteri etkileşim metrikleri</p>
+        </div>
+        
+        <div className="flex items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "h-7 rounded-full px-2 text-[11px] font-medium border-border/60 bg-muted/30",
-                  isCustomRange && "text-primary border-primary/40 bg-primary/10"
+                  "h-7 rounded-full px-2 text-[11px] font-medium border-gray-200 bg-white hover:bg-gray-50",
+                  isCustomRange && "text-indigo-600 border-indigo-200 bg-indigo-50"
                 )}
               >
                 <CalendarIcon className="w-3.5 h-3.5 mr-1" />
@@ -164,75 +85,54 @@ export const QRRewardStatsCard = () => {
               />
             </PopoverContent>
           </Popover>
-        </div>
-        <div className="flex items-center bg-muted/40 rounded-full p-0.5">
-          <button
-            onClick={() => {
-              setPeriod("daily");
-              setPreset("daily");
-            }}
-            className={cn(
-              "w-7 h-7 rounded-full text-xs font-semibold transition-all duration-200",
-              period === "daily" && !isCustomRange
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            G
-          </button>
-          <button
-            onClick={() => {
-              setPeriod("weekly");
-              setPreset("weekly");
-            }}
-            className={cn(
-              "w-7 h-7 rounded-full text-xs font-semibold transition-all duration-200",
-              period === "weekly" && !isCustomRange
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            H
-          </button>
-          <button
-            onClick={() => {
-              setPeriod("monthly");
-              setPreset("monthly");
-            }}
-            className={cn(
-              "w-7 h-7 rounded-full text-xs font-semibold transition-all duration-200",
-              period === "monthly" && !isCustomRange
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            A
-          </button>
+          
+          <div className="flex items-center bg-gray-100 rounded-full p-0.5">
+            {(["daily", "weekly", "monthly"] as PeriodType[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  setPeriod(p);
+                  setPreset(p as "daily" | "weekly" | "monthly");
+                  setIsCustomRange(false);
+                }}
+                className={cn(
+                  "w-7 h-7 rounded-full text-xs font-semibold transition-all duration-200",
+                  period === p && !isCustomRange
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                )}
+              >
+                {p === "daily" ? "G" : p === "weekly" ? "H" : "A"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard
-          data={activeStats.visits}
-          icon={Users}
-          iconColor="bg-sage/20"
-          gradientColor="bg-gradient-to-br from-sage/10 via-sage/5 to-transparent border-sage/20"
-          iconTextColor="text-sage"
-          infoText="QR okutmuş ziyaretçi sayısı"
-        />
-        <StatCard
-          data={activeStats.qrGiven}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <ModernStatsCard 
+          title="QR Kullanıldı"
+          value={currentData.visits.value}
+          change={currentData.visits.change}
           icon={QrCode}
-          iconColor="bg-primary/20"
-          gradientColor="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20"
-          iconTextColor="text-primary"
+          description="Müşteriler tarafından taranan QR kod sayısı"
+          color="primary"
         />
-        <StatCard
-          data={activeStats.rewardUsed}
+        <ModernStatsCard 
+          title="Kampanya Kullanıldı"
+          value={currentData.qrGiven.value}
+          change={currentData.qrGiven.change}
           icon={Gift}
-          iconColor="bg-gold/20"
-          gradientColor="bg-gradient-to-br from-gold/10 via-gold/5 to-transparent border-gold/20"
-          iconTextColor="text-gold"
+          description="Kampanya kodlarının kullanım sayısı"
+          color="success"
+        />
+        <ModernStatsCard 
+          title="Ödül Verildi"
+          value={currentData.rewardUsed.value}
+          change={currentData.rewardUsed.change}
+          icon={Gift}
+          description="Müşterilerin kullandığı ödül sayısı"
+          color="warning"
         />
       </div>
     </div>

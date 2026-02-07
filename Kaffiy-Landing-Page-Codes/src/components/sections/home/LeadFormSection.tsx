@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n";
-import { CheckCircle2, Users } from "lucide-react";
+import { CheckCircle2, Users, Shield, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export function LeadFormSection() {
@@ -149,31 +149,33 @@ export function LeadFormSection() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-1">
-                    {t("leadForm.email")}
-                  </Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    className="h-14 rounded-2xl border-transparent bg-white/70 dark:bg-slate-800/50 shadow-sm focus:bg-white dark:focus:bg-slate-800 transition-all border outline-none ring-0 focus:ring-2 focus:ring-primary/20 px-5 text-base"
-                    placeholder={t("leadForm.emailPlaceholder")}
-                  />
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-1">
+                      {t("leadForm.email")}
+                    </Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      className="h-14 rounded-2xl border-transparent bg-white/70 dark:bg-slate-800/50 shadow-sm focus:bg-white dark:focus:bg-slate-800 transition-all border outline-none ring-0 focus:ring-2 focus:ring-primary/20 px-5 text-base"
+                      placeholder={t("leadForm.emailPlaceholder")}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="contact" className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-1">
-                    {t("leadForm.contact")}
-                  </Label>
-                  <Input
-                    id="contact"
-                    name="contact"
-                    required
-                    className="h-14 rounded-2xl border-transparent bg-white/70 dark:bg-slate-800/50 shadow-sm focus:bg-white dark:focus:bg-slate-800 transition-all border outline-none ring-0 focus:ring-2 focus:ring-primary/20 px-5 text-base"
-                    placeholder="05XX XXX XX XX"
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="contact" className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-1">
+                      {t("leadForm.contact")}
+                    </Label>
+                    <Input
+                      id="contact"
+                      name="contact"
+                      required
+                      className="h-14 rounded-2xl border-transparent bg-white/70 dark:bg-slate-800/50 shadow-sm focus:bg-white dark:focus:bg-slate-800 transition-all border outline-none ring-0 focus:ring-2 focus:ring-primary/20 px-5 text-base"
+                      placeholder="05XX XXX XX XX"
+                    />
+                  </div>
                 </div>
 
                 <Button
@@ -194,6 +196,22 @@ export function LeadFormSection() {
                 </p>
               </form>
             )}
+          </div>
+
+          {/* Trust Badges */}
+          <div className="mt-8 flex flex-wrap justify-center gap-6 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <Shield className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span>256-bit SSL</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span>5 dakika kurulum</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span>Erken erişim kafeleri</span>
+            </div>
           </div>
         </div>
       </div>

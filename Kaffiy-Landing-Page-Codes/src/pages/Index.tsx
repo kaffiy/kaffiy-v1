@@ -4,6 +4,8 @@ import { WhyKaffiySection } from "@/components/sections/home/WhyKaffiySection";
 import { HowItWorksSection } from "@/components/sections/home/HowItWorksSection";
 import { DashboardPreviewSection } from "@/components/sections/home/DashboardPreviewSection";
 
+import { LeadFormSection } from "@/components/sections/home/LeadFormSection";
+
 const Index = () => {
   return (
     <Layout>
@@ -11,6 +13,7 @@ const Index = () => {
       <DashboardPreviewSection />
       <WhyKaffiySection />
       <HowItWorksSection />
+      <LeadFormSection />
     </Layout>
   );
 };
