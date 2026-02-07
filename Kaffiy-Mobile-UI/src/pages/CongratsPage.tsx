@@ -1,10 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useUser } from "@/contexts/UserContext";
 import PoweredByFooter from "@/components/PoweredByFooter";
 
 
 const CongratsPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { user } = useUser();
+  const points = searchParams.get("points") || "1";
+  const isGuest = !user;
 
   return (
     <div className="mobile-container min-h-screen flex flex-col bg-background safe-area-top safe-area-bottom">
@@ -23,10 +28,12 @@ const CongratsPage = () => {
             Tebrikler!
           </h1>
           <p className="text-xl text-primary font-semibold mb-2">
-            1 Puan Kazandınız
+            {points} Puan Kazandınız
           </p>
           <p className="text-muted-foreground">
-            Devam etmek için giriş yapın veya hesap oluşturun
+            {isGuest
+              ? "Puanlarınızı kaybetmemek için kayıt olun"
+              : "Puanlarınız hesabınıza eklendi!"}
           </p>
         </div>
 
@@ -38,22 +45,35 @@ const CongratsPage = () => {
 
       {/* Action Buttons */}
       <footer className="px-6 pb-4 space-y-3 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-        <Button
-          variant="cafe"
-          size="xl"
-          className="w-full"
-          onClick={() => navigate("/signup")}
-        >
-          Kayıt Ol
-        </Button>
-        <Button
-          variant="cafe-outline"
-          size="lg"
-          className="w-full"
-          onClick={() => navigate("/login")}
-        >
-          Giriş Yap
-        </Button>
+        {isGuest ? (
+          <>
+            <Button
+              variant="cafe"
+              size="xl"
+              className="w-full"
+              onClick={() => navigate("/signup")}
+            >
+              Kayıt Ol
+            </Button>
+            <Button
+              variant="cafe-outline"
+              size="lg"
+              className="w-full"
+              onClick={() => navigate("/login")}
+            >
+              Zaten Hesabım Var
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="cafe"
+            size="xl"
+            className="w-full"
+            onClick={() => navigate("/home")}
+          >
+            Ana Sayfaya Dön
+          </Button>
+        )}
       </footer>
 
       <PoweredByFooter />

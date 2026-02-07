@@ -109,13 +109,29 @@ export const BaristaView = () => {
   const handleQRScan = async (qrData: string) => {
     if ('vibrate' in navigator) navigator.vibrate(50);
 
-    let userId = qrData;
-    if (qrData.startsWith("u:")) userId = qrData.substring(2);
-
-    setScanResult(userId);
+    setScanResult(qrData);
     setIsLoading(true);
 
     try {
+      // Guest QR: g:kahvesever123456
+      if (qrData.startsWith("g:")) {
+        const guestId = qrData.substring(2);
+        setCustomer({ id: guestId, isGuest: true });
+        setCustomerName(guestId);
+        setCurrentStamps(0);
+
+        toast({
+          title: "Misafir Müşteri",
+          description: `${guestId} - İlk ziyaret! Puan ekleyebilirsiniz.`,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Registered user QR: u:uuid
+      let userId = qrData;
+      if (qrData.startsWith("u:")) userId = qrData.substring(2);
+
       // 1. Get User Profile
       const { data: profile, error: profileError } = await supabase
         .from('user_tb')
@@ -167,7 +183,32 @@ export const BaristaView = () => {
 
     setIsLoading(true);
     try {
-      // Check if royalty record exists
+      // Guest customer: no DB write, just show success + broadcast to customer
+      if (customer.isGuest) {
+        const newTotal = currentStamps + pointsToAdd;
+        setCurrentStamps(newTotal);
+        setShowSuccessAnimation(true);
+        setTimeout(() => setShowSuccessAnimation(false), 2000);
+
+        // Broadcast to customer's phone so it navigates to congrats
+        const channel = supabase.channel(`scan_${customer.id}`);
+        await channel.subscribe();
+        await channel.send({
+          type: 'broadcast',
+          event: 'points_added',
+          payload: { points: pointsToAdd, total: newTotal, company_id: currentCompanyId },
+        });
+        supabase.removeChannel(channel);
+
+        toast({
+          title: "Puan Eklendi (Misafir)",
+          description: `${customerName} - +${pointsToAdd} puan. Müşteri kayıt olunca puanları aktarılacak.`,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Registered customer: write to DB
       const { data: existingRoyalty } = await supabase
         .from("royalty_tb")
         .select("*")

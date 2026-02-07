@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import QRCode from "react-qr-code";
 import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/lib/supabase";
 import PoweredByFooter from "@/components/PoweredByFooter";
 import StepProgress from "@/components/StepProgress";
 import { Loader2 } from "lucide-react";
@@ -28,13 +29,39 @@ const QRDisplayPage = () => {
 
   useEffect(() => {
     if (user) {
-      // Logged-in user: use real user ID
       setQrValue(`u:${user.id}`);
     } else if (!isLoading) {
-      // Guest: use temp guest ID
       setQrValue(`g:${getGuestId()}`);
     }
   }, [user, isLoading]);
+
+  // Listen for barista broadcast (points_added event)
+  useEffect(() => {
+    const listenId = user ? user.id : getGuestId();
+    const channel = supabase.channel(`scan_${listenId}`);
+
+    channel
+      .on('broadcast', { event: 'points_added' }, (payload: any) => {
+        const data = payload.payload;
+        // Save points to localStorage for guest
+        if (!user) {
+          const existing = JSON.parse(localStorage.getItem("kaffiy_guest_points") || "[]");
+          existing.push({
+            points: data.points,
+            company_id: data.company_id,
+            timestamp: new Date().toISOString(),
+          });
+          localStorage.setItem("kaffiy_guest_points", JSON.stringify(existing));
+        }
+        // Navigate to congrats page
+        navigate(`/congrats?points=${data.points}`);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, navigate]);
 
   const isGuest = !user;
   const guestId = getGuestId();
