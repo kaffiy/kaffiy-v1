@@ -1,20 +1,23 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { 
-  Plus, 
-  Megaphone, 
-  Calendar, 
-  Users, 
-  TrendingUp, 
-  Play, 
-  Pause, 
+import { useCompany } from "@/contexts/CompanyContext";
+import { supabase } from "@/lib/supabase";
+import {
+  Plus,
+  Megaphone,
+  Calendar,
+  Users,
+  TrendingUp,
+  Play,
+  Pause,
   MoreVertical,
   Gift,
   Percent,
   Clock,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -53,44 +56,64 @@ interface Campaign {
   personLimit?: number;
 }
 
-const mockCampaigns: Campaign[] = [
-  { 
-    id: "1", 
-    name: "Doğum Günü Kampanyası", 
-    type: "reward", 
-    status: "active", 
-    startDate: "1 Oca 2026", 
-    endDate: "31 Ara 2026", 
-    targetAudience: "Doğum Günü Olan Müşteriler",
-    reach: 84,
-    conversions: 26,
-    conversionRate: 31,
-    description: "Doğum gününde 1 dilim pasta hediye"
-  },
-  { 
-    id: "2", 
-    name: "Kahve Yanı Tatlı İndirimi", 
-    type: "discount", 
-    status: "active", 
-    startDate: "1 Oca 2026", 
-    endDate: "31 Ara 2026", 
-    targetAudience: "Kahve Satın Alan Müşteriler",
-    reach: 210,
-    conversions: 92,
-    conversionRate: 44,
-    description: "Kahve alana yanında tatlı %25 indirimli"
-  },
-];
-
 const Campaigns = () => {
   const { toast } = useToast();
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
+  const { companyId, isLoading: companyLoading } = useCompany();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [detailsCampaign, setDetailsCampaign] = useState<Campaign | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | Campaign["status"]>("all");
+
+  // Fetch campaigns from Supabase
+  useEffect(() => {
+    if (!companyId) return;
+
+    const fetchCampaigns = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from("campaign_tb")
+          .select("*")
+          .eq("company_id", companyId)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        // Transform Supabase data to Campaign interface
+        const transformedCampaigns: Campaign[] = (data || []).map((c: any) => ({
+          id: c.id,
+          name: c.title || c.name || "İsimsiz Kampanya",
+          type: c.type || "reward",
+          status: c.status || "active",
+          startDate: c.start_date ? new Date(c.start_date).toLocaleDateString("tr-TR") : "-",
+          endDate: c.end_date ? new Date(c.end_date).toLocaleDateString("tr-TR") : "-",
+          targetAudience: c.target_audience || "Tüm Müşteriler",
+          reach: c.current_uses || 0,
+          conversions: c.current_uses || 0,
+          conversionRate: c.current_uses && c.max_uses ? Math.round((c.current_uses / c.max_uses) * 100) : 0,
+          description: c.description || "",
+          personLimit: c.max_uses || undefined,
+        }));
+
+        setCampaigns(transformedCampaigns);
+      } catch (error: any) {
+        console.error("Campaign fetch error:", error);
+        toast({
+          variant: "destructive",
+          title: "Hata",
+          description: "Kampanyalar yüklenirken bir sorun oluştu.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCampaigns();
+  }, [companyId, toast]);
 
   const filteredCampaigns = campaigns.filter(
     c => filterStatus === "all" || c.status === filterStatus
@@ -147,8 +170,8 @@ const Campaigns = () => {
   };
 
   const handleToggleStatus = (campaign: Campaign) => {
-    setCampaigns(prev => prev.map(c => 
-      c.id === campaign.id 
+    setCampaigns(prev => prev.map(c =>
+      c.id === campaign.id
         ? { ...c, status: (c.status === "active" ? "paused" : "active") as Campaign["status"] }
         : c
     ));
@@ -198,6 +221,14 @@ const Campaigns = () => {
 
   return (
     <DashboardLayout>
+      {(isLoading || companyLoading) ? (
+        <div className="flex h-96 items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Kampanyalar yükleniyor...</p>
+          </div>
+        </div>
+      ) : (
       <div className="space-y-6">
         {/* Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -274,8 +305,8 @@ const Campaigns = () => {
         {/* Campaign Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredCampaigns.map((campaign) => (
-            <div 
-              key={campaign.id} 
+            <div
+              key={campaign.id}
               className="bg-card/60 backdrop-blur-sm rounded-lg border border-border/50 p-3 hover:border-border transition-colors"
             >
               <div className="flex items-start justify-between mb-2.5">
@@ -307,8 +338,8 @@ const Campaigns = () => {
                     ) : campaign.status === "paused" ? (
                       <DropdownMenuItem onClick={() => handleToggleStatus(campaign)}>Devam Et</DropdownMenuItem>
                     ) : null}
-                    <DropdownMenuItem 
-                      className="text-destructive" 
+                    <DropdownMenuItem
+                      className="text-destructive"
                       onClick={() => handleDeleteClick(campaign)}
                     >
                       Sil
@@ -378,9 +409,9 @@ const Campaigns = () => {
                     {campaign.status === "scheduled" ? "Planlanmış" : "Bitti"}
                   </span>
                 )}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="rounded-md text-[10px] h-6 px-2"
                   onClick={() => handleShowDetails(campaign)}
                 >
@@ -392,8 +423,8 @@ const Campaigns = () => {
         </div>
       </div>
 
-      <NewCampaignModal 
-        open={isModalOpen} 
+      <NewCampaignModal
+        open={isModalOpen}
         onOpenChange={(open) => {
           setIsModalOpen(open);
           if (!open) setEditingCampaign(null);
@@ -407,8 +438,8 @@ const Campaigns = () => {
             if (updatedCampaign.personLimit && updatedCampaign.conversions >= updatedCampaign.personLimit && updatedCampaign.status === "active") {
               updatedCampaign.status = "paused";
             }
-            setCampaigns(prev => prev.map(c => 
-              c.id === editingCampaign.id 
+            setCampaigns(prev => prev.map(c =>
+              c.id === editingCampaign.id
                 ? updatedCampaign as Campaign
                 : c
             ));
@@ -432,9 +463,9 @@ const Campaigns = () => {
           }
         }}
       />
-      
-      <CampaignDetailsModal 
-        open={!!detailsCampaign} 
+
+      <CampaignDetailsModal
+        open={!!detailsCampaign}
         onOpenChange={(open) => !open && setDetailsCampaign(null)}
         campaign={detailsCampaign}
       />
@@ -446,7 +477,7 @@ const Campaigns = () => {
             <AlertDialogDescription>
               {campaignToDelete && (
                 <>
-                  <strong>{campaignToDelete.name}</strong> kampanyasını silmek istediğinize emin misiniz? 
+                  <strong>{campaignToDelete.name}</strong> kampanyasını silmek istediğinize emin misiniz?
                   Bu işlem geri alınamaz.
                 </>
               )}
@@ -454,7 +485,7 @@ const Campaigns = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-xl">İptal</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive hover:bg-destructive/90 rounded-xl"
             >
@@ -463,7 +494,10 @@ const Campaigns = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
+      </div>
+  )
+}
+    </DashboardLayout >
   );
 };
 
