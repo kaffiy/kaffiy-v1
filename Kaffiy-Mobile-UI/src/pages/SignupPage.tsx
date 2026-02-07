@@ -2,36 +2,91 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PoweredByFooter from "@/components/PoweredByFooter";
 import KVKKModal from "@/components/KVKKModal";
 import StepProgress from "@/components/StepProgress";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { signUp, isLoading } = useAuth();
+  const { signUp } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
   const [pushNotificationAccepted, setPushNotificationAccepted] = useState(false);
   const [isKVKKModalOpen, setIsKVKKModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSendCode = async (e: React.FormEvent) => {
+  const transferGuestPoints = async (userId: string) => {
+    try {
+      const guestPoints = JSON.parse(localStorage.getItem("kaffiy_guest_points") || "[]");
+      if (guestPoints.length === 0) return;
+
+      for (const entry of guestPoints) {
+        if (!entry.company_id) continue;
+
+        const { data: existing } = await supabase
+          .from("royalty_tb")
+          .select("id, points")
+          .eq("user_id", userId)
+          .eq("company_id", entry.company_id)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from("royalty_tb")
+            .update({ points: existing.points + entry.points, last_activity: new Date().toISOString() })
+            .eq("id", existing.id);
+        } else {
+          await supabase
+            .from("royalty_tb")
+            .insert({
+              user_id: userId,
+              company_id: entry.company_id,
+              points: entry.points,
+              level: 'explorer',
+              visits_count: 1,
+              last_activity: new Date().toISOString(),
+            });
+        }
+      }
+
+      // Temizle
+      localStorage.removeItem("kaffiy_guest_points");
+      localStorage.removeItem("kaffiy_guest_id");
+    } catch (err) {
+      console.error("Guest puan aktarım hatası:", err);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     try {
-      await signUp(email, password, {
-        kvkk_accepted: kvkkAccepted,
-        push_notification_accepted: pushNotificationAccepted
-      });
-      toast.success("Kayıt başarılı! Lütfen e-postanızı doğrulayın.");
-      navigate("/verify");
-    } catch (error) {
-      // Error is already handled by AuthContext
+      const name = email.split("@")[0];
+      await signUp(email, password, name);
+
+      // Kayıt sonrası otomatik giriş yap
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      if (loginError) throw loginError;
+
+      // Guest puanlarını aktar
+      if (data.user) {
+        await transferGuestPoints(data.user.id);
+      }
+
+      toast.success("Kayıt başarılı! Hoş geldiniz.");
+      navigate("/home");
+    } catch (error: any) {
+      toast.error(error.message || "Kayıt yapılamadı");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -151,10 +206,11 @@ const SignupPage = () => {
           variant="cafe"
           size="xl"
           className="w-full"
-          onClick={handleSendCode}
-          disabled={!isFormValid}
+          onClick={handleSignup}
+          disabled={!isFormValid || isSubmitting}
         >
-          Kod Gönder
+          {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+          Kayıt Ol
         </Button>
       </footer>
 
