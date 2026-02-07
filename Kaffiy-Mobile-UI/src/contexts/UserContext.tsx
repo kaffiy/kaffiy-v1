@@ -175,20 +175,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                 throw new Error('User creation failed');
             }
 
-            // 2. Create user profile in user_tb
-            const { error: profileError } = await supabase
-                .from('user_tb')
-                .insert({
-                    id: authData.user.id,
-                    email,
-                    first_name: name,
-                    last_name: '',
-                    status: 'active',
-                });
-
-            if (profileError) throw profileError;
-
-            // User will be set by onAuthStateChange
+            // user_tb profile will be created after login (RLS requires active session)
         } catch (error: any) {
             console.error('Sign up error:', error);
             throw new Error(error.message || 'Failed to sign up');

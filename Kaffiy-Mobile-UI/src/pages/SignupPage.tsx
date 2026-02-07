@@ -84,12 +84,27 @@ const SignupPage = () => {
         push_notification_accepted: pushNotificationAccepted,
       });
 
-      // 2. Otomatik giriş yap
+      // 2. Otomatik giriş yap (RLS için session gerekli)
       const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
       if (loginError) throw loginError;
 
-      // 3. Guest puanlarını DB'ye aktar
       if (data.user) {
+        // 3. user_tb profil oluştur (session aktif, RLS geçer)
+        const { error: profileError } = await supabase
+          .from("user_tb")
+          .insert({
+            id: data.user.id,
+            email,
+            first_name: name,
+            last_name: "",
+            status: "active",
+          });
+
+        if (profileError && !profileError.message.includes("duplicate")) {
+          console.error("Profile create error:", profileError);
+        }
+
+        // 4. Guest puanlarını DB'ye aktar
         await transferGuestPoints(data.user.id);
       }
 
