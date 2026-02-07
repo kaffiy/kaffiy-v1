@@ -66,17 +66,29 @@ const SignupPage = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFormValid) return;
     setIsSubmitting(true);
     
     try {
-      const name = email.split("@")[0];
-      await signUp(email, password, name);
+      // Şifre uzunluk kontrolü
+      if (password.length < 6) {
+        toast.error("Şifre en az 6 karakter olmalıdır");
+        return;
+      }
 
-      // Kayıt sonrası otomatik giriş yap
+      const name = email.split("@")[0];
+
+      // 1. Kayıt ol (Supabase Auth + user_tb profil oluşturma)
+      await signUp(email, password, name, {
+        kvkk_accepted: kvkkAccepted,
+        push_notification_accepted: pushNotificationAccepted,
+      });
+
+      // 2. Otomatik giriş yap
       const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
       if (loginError) throw loginError;
 
-      // Guest puanlarını aktar
+      // 3. Guest puanlarını DB'ye aktar
       if (data.user) {
         await transferGuestPoints(data.user.id);
       }
@@ -84,7 +96,12 @@ const SignupPage = () => {
       toast.success("Kayıt başarılı! Hoş geldiniz.");
       navigate("/home");
     } catch (error: any) {
-      toast.error(error.message || "Kayıt yapılamadı");
+      const msg = error.message || "Kayıt yapılamadı";
+      if (msg.includes("already registered")) {
+        toast.error("Bu e-posta adresi zaten kayıtlı. Giriş yapmayı deneyin.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }

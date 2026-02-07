@@ -32,7 +32,7 @@ interface UserContextType {
     session: Session | null;
     isLoading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string, name: string) => Promise<void>;
+    signUp: (email: string, password: string, name: string, metadata?: { kvkk_accepted?: boolean; push_notification_accepted?: boolean }) => Promise<void>;
     signInAnonymously: () => Promise<void>;
     signOut: () => Promise<void>;
     refreshLoyalty: () => Promise<void>;
@@ -149,15 +149,22 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     /**
      * Sign up with email, password, and name
      */
-    const signUp = async (email: string, password: string, name: string) => {
+    const signUp = async (
+        email: string,
+        password: string,
+        name: string,
+        metadata?: { kvkk_accepted?: boolean; push_notification_accepted?: boolean }
+    ) => {
         try {
-            // 1. Create auth user
+            // 1. Create auth user with metadata
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
                     data: {
                         name,
+                        kvkk_accepted: metadata?.kvkk_accepted ?? false,
+                        push_notification_accepted: metadata?.push_notification_accepted ?? false,
                     },
                 },
             });
