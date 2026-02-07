@@ -6,53 +6,44 @@ import PoweredByFooter from "@/components/PoweredByFooter";
 import StepProgress from "@/components/StepProgress";
 import { Loader2 } from "lucide-react";
 
+/**
+ * Get or create a temporary guest ID stored in localStorage.
+ * This ID is used in the QR code so barista can identify the guest.
+ * When the guest signs up, this temp ID can be linked to their real account.
+ */
+const getGuestId = (): string => {
+  const stored = localStorage.getItem("kaffiy_guest_id");
+  if (stored) return stored;
+  const newId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  localStorage.setItem("kaffiy_guest_id", newId);
+  return newId;
+};
+
 const QRDisplayPage = () => {
   const navigate = useNavigate();
-  const { user, profile, signInAnonymously, isLoading } = useUser();
+  const { user, profile, isLoading } = useUser();
   const [qrValue, setQrValue] = useState("");
-  const [initError, setInitError] = useState(false);
-  const backupCode = profile?.name?.split('_')[1] || user?.id?.substring(0, 6) || "------";
-
-  useEffect(() => {
-    const initUser = async () => {
-      if (!isLoading && !user) {
-        try {
-          await signInAnonymously();
-        } catch (err) {
-          console.error("Anonymous sign-in failed:", err);
-          setInitError(true);
-        }
-      }
-    };
-    initUser();
-  }, [user, isLoading]);
 
   useEffect(() => {
     if (user) {
+      // Logged-in user: use real user ID
       setQrValue(`u:${user.id}`);
+    } else if (!isLoading) {
+      // Guest: use temp guest ID
+      setQrValue(`g:${getGuestId()}`);
     }
-  }, [user]);
+  }, [user, isLoading]);
+
+  const isGuest = !user;
+  const displayName = profile?.name
+    || (user ? `${user.email?.split('@')[0] || 'Kullanıcı'}` : "Misafir Kullanıcı");
+  const backupCode = user?.id?.substring(0, 6)?.toUpperCase() || getGuestId().substring(6, 12).toUpperCase();
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2 text-muted-foreground">Kaffiy'e bağlanılıyor...</p>
-      </div>
-    );
-  }
-
-  if (initError && !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-6">
-        <div className="text-center p-8 rounded-3xl bg-secondary/30 backdrop-blur-sm border border-border">
-          <span className="text-5xl mb-4 block">☕</span>
-          <h1 className="text-xl font-bold text-foreground mb-2">Bağlantı Hatası</h1>
-          <p className="text-sm text-muted-foreground mb-4">Lütfen sayfayı yenileyin.</p>
-          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium">
-            Yenile
-          </button>
-        </div>
+        <p className="ml-2 text-muted-foreground">Kaffiy Yükleniyor...</p>
       </div>
     );
   }
@@ -74,7 +65,7 @@ const QRDisplayPage = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-8">
         <h2 className="text-xl font-semibold mb-2">Hoş Geldin!</h2>
-        <p className="text-muted-foreground mb-6">{profile?.name || "Misafir Kullanıcı"}</p>
+        <p className="text-muted-foreground mb-6">{displayName}</p>
 
         {/* QR Code Area */}
         <div className="animate-scale-in">
@@ -106,8 +97,8 @@ const QRDisplayPage = () => {
           Bu QR kodu baristaya gösterin ve puan kazanın!
         </p>
 
-        {/* Registration Reminder */}
-        {!profile?.email || profile.email.startsWith('guest_') ? (
+        {/* Registration/Login Reminder for guests */}
+        {isGuest && (
           <div className="mt-8 px-4 py-3 bg-accent/10 border border-accent/20 rounded-xl max-w-sm animate-fade-in" style={{ animationDelay: "0.4s" }}>
             <p className="text-sm text-foreground text-center font-medium leading-relaxed">
               Puanlarınızı kalıcı yapmak için{" "}
@@ -119,7 +110,7 @@ const QRDisplayPage = () => {
               </button>
             </p>
           </div>
-        ) : null}
+        )}
       </main>
 
       <PoweredByFooter />
