@@ -2,7 +2,7 @@
 
 ## Kullanıcı Bilgileri
 - **Email:** gokceoguz27@gmail.com
-- **Şifre:** tumtavsan2020!
+- **Şifre:** 123
 - **Rol:** Admin (Tam Sistem Erişimi)
 
 ---
@@ -22,8 +22,8 @@
 2. **"Users"** alt sekmesine gidin
 3. Sağ üstteki **"Add User"** butonuna tıklayın
 4. Açılan formda:
-   - **Email:** `gokceoguz27@gmail.com`
-   - **Password:** `tumtavsan2020!`
+1. **Email:** `gokceoguz27@gmail.com`
+   - **Password:** `123`
    - **Auto Confirm User:** ✅ **İŞARETLEYİN** (önemli!)
 5. **"Create User"** butonuna tıklayın
 
@@ -98,7 +98,7 @@ WHERE w.email = 'gokceoguz27@gmail.com';
 1. Tarayıcınızda açın: `http://localhost:5173` (Kaffiy-Admin dev server)
 2. Giriş bilgileri:
    - **Email:** gokceoguz27@gmail.com
-   - **Şifre:** tumtavsan2020!
+   - **Şifre:** 123
 3. **"Giriş Yap"** butonuna tıklayın
 4. Başarılı olursa → Tüm kafeleri görebilirsiniz
 

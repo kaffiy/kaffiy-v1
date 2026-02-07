@@ -8,7 +8,7 @@
 -- NOTE: This needs to be done via Supabase Dashboard > Authentication > Users
 -- Click "Add User" and use:
 -- Email: gokceoguz27@gmail.com
--- Password: tumtavsan2020!
+-- Password: 123
 -- Auto Confirm User: YES
 
 -- Step 2: After creating the user in Supabase Dashboard, get the user ID
@@ -110,7 +110,7 @@ WHERE w.email = 'gokceoguz27@gmail.com';
 
 -- 4. To login:
 --    Email: gokceoguz27@gmail.com
---    Password: tumtavsan2020!
+--    Password: 123
 
 -- 5. After login, the system will:
 --    - Check worker_tb for role
