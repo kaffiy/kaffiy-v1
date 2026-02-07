@@ -125,7 +125,7 @@ const SignupPage = () => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSendCode} className="space-y-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        <form onSubmit={handleSignup} className="space-y-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">E-posta</label>
             <Input
