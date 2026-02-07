@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     /**
-     * Handle session and verify admin access
+     * Handle session - no access restriction
      */
     const handleSession = async (session: Session | null) => {
         setSession(session);
@@ -54,20 +54,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (session?.user?.email) {
             const worker = await checkAdminRole(session.user.email);
-
             if (worker) {
                 setWorkerRole({ role: worker.role, company_id: worker.company_id });
-                setIsAdmin(true);
-            } else {
-                if (typeof window !== 'undefined') {
-                    alert('Erişim Reddedildi: Bu panele sadece Kaffiy yöneticileri erişebilir.');
-                }
-                await supabase.auth.signOut();
-                setSession(null);
-                setUser(null);
-                setWorkerRole(null);
-                setIsAdmin(false);
             }
+            setIsAdmin(true);
         } else {
             setWorkerRole(null);
             setIsAdmin(false);
