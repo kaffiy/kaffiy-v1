@@ -298,7 +298,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [user]);
+    }, [user, refreshLoyalty]);
 
     return (
         <UserContext.Provider

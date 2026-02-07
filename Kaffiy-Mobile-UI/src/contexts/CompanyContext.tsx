@@ -185,7 +185,7 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (qrCode) {
             trackQRScan(qrCode).catch(console.error);
         }
-    }, []);
+    }, [trackQRScan]);
 
     return (
         <CompanyContext.Provider
